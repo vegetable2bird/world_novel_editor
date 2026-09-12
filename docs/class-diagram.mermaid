@@ -1,0 +1,113 @@
+classDiagram
+    class World {
+        +string id
+        +string name
+        +string description
+        +string createdAt
+        +string updatedAt
+    }
+    class WorldEntity {
+        +string id
+        +string worldId
+        +EntityType type
+        +string name
+        +string summary
+        +Record~string,unknown~ fields
+        +bool inContext
+    }
+    class EntityRelation {
+        +string id
+        +string sourceId
+        +string targetId
+        +string type
+        +bool directed
+    }
+    class Variable {
+        +string id
+        +string key
+        +number value
+    }
+    class Foreshadow {
+        +string id
+        +string title
+        +enum status
+    }
+    class TimelineEvent {
+        +string id
+        +string title
+        +string description
+        +enum type
+        +string causedByOperationId
+    }
+    class WorldStateSnapshot {
+        +string id
+        +string label
+        +Record~string,number~ variables
+        +string relationsHash
+    }
+    class Operation {
+        +string id
+        +OperationKind kind
+        +Record~string,unknown~ payload
+    }
+    class OperationResult {
+        +string narrativeSummary
+        +string[] affectedEntityIds
+        +Record~string,number~ variableDeltas
+    }
+    class DirectionOption {
+        +string id
+        +string label
+        +string estimatedSummary
+    }
+    class Chapter {
+        +number index
+        +string title
+        +string currentVersionId
+        +enum status
+    }
+    class ChapterVersion {
+        +string content
+        +enum source
+        +number wordCount
+    }
+    class StyleConfig {
+        +enum scope
+        +string tone
+        +string pov
+        +string pacing
+        +string rhetoric
+        +string[] forbiddenWritings
+        +string[] requiredForeshadows
+    }
+    class AIRequest {
+        +string contextBlock
+        +string operationBlock
+        +string styleBlock
+    }
+    class AIResponse {
+        +string content
+        +string provider
+    }
+    class AIGenerationRecord {
+        +string id
+        +enum status
+    }
+
+    World "1" *-- "0..*" WorldEntity : 拥有
+    World "1" *-- "0..*" EntityRelation : 拥有
+    World "1" *-- "0..*" Variable : 拥有
+    World "1" *-- "0..*" Foreshadow : 拥有
+    World "1" *-- "0..*" TimelineEvent : 记录
+    World "1" *-- "0..*" WorldStateSnapshot : 快照
+    World "1" *-- "0..*" Chapter : 包含
+    World "1" *-- "0..*" StyleConfig : 配置
+    WorldEntity "1" *-- "0..*" EntityRelation : 端点
+    Chapter "1" *-- "0..*" ChapterVersion : 版本
+    Operation "1" *-- "1" OperationResult : 推演
+    OperationResult "1" *-- "0..*" DirectionOption : 推荐
+    OperationResult "1" *-- "0..*" TimelineEvent : 产生
+    AIGenerationRecord *-- AIRequest : 请求
+    AIGenerationRecord *-- AIResponse : 响应
+    ChapterVersion "0..1" --> AIGenerationRecord : 来源
+    TimelineEvent "0..*" --> Chapter : 关联章节

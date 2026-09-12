@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    actor Author as 作者
+    participant WV as 世界观视图(WorldPage)
+    participant CV as 操作台(ConsolePage)
+    participant NE as narrativeEngine
+    participant GS as generationSlice
+    participant CA as contextAssembler
+    participant PB as promptBuilder
+    participant API as 后端代理/api/ai/generate
+    participant EV as 编辑器(EditorPage)
+
+    Note over Author,WV: ① 构建世界观
+    Author->>WV: 新建/编辑实体、拖拽关系
+    WV->>WV: worldSlice 写入 WorldEntity/EntityRelation
+    WV->>WV: 持久化(Dexie) + 标记 inContext
+
+    Note over Author,CV: ② 操作台操作(可视化改关系/选走向)
+    Author->>CV: 调度势力/推时间/触发事件/改变量
+    CV->>NE: narrate(operation, worldState)
+    NE-->>CV: OperationResult(摘要/事件/变量Δ/走向选项)
+    CV->>CV: 记录 TimelineEvent + 更新 Variable + 存快照
+    Author->>CV: 在 DirectionSelector 选定走向
+
+    Note over Author,API: ③ AI 按风格生成章节(三段式)
+    Author->>GS: generateChapter(worldId, index, styleConfig)
+    GS->>CA: assemble(worldId, index)
+    CA-->>GS: contextBlock(段1)
+    GS->>PB: build(request)
+    PB-->>GS: AIRequest
+    GS->>API: POST /api/ai/generate (仅请求体，密钥在服务端)
+    API-->>GS: AIResponse(content)
+    GS->>GS: 建 Chapter + ChapterVersion(source=ai) + AIGenerationRecord
+    GS->>CV: 追加 generation 类型 TimelineEvent
+
+    Note over Author,EV: ④ 编辑器修订
+    Author->>EV: 打开章节，审阅/改写 Markdown
+    EV->>EV: 保存 ChapterVersion(source=human/merged) + 版本回溯
+    Author->>EV: 导出 TXT/Markdown 或 返回操作台继续
+    EV-->>CV: 继续操作(回到②)

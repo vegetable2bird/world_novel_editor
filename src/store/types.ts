@@ -1,0 +1,213 @@
+import type {
+  World,
+  WorldEntity,
+  EntityRelation,
+  Variable,
+  Foreshadow,
+} from '../types/world';
+import type { TimelineEvent, WorldStateSnapshot } from '../types/timeline';
+import type { Operation, OperationResult, DirectionOption } from '../types/console';
+import type { Chapter, ChapterVersion } from '../types/chapter';
+import type { StyleConfig } from '../types/style';
+import type { AIGenerationRecord } from '../types/ai';
+
+/** 关系图节点坐标（内部使用，不参与对外契约）。 */
+export interface XYPosition {
+  x: number;
+  y: number;
+}
+
+/** 世界"时钟"（操作台推进时间的累积状态，内部状态）。 */
+export interface WorldClock {
+  era: string;
+  year: number;
+  season: string;
+}
+
+/**
+ * 单个世界的完整数据聚合（单一真相来源）。
+ * 所有域（实体/关系/变量/章节/风格/生成记录…）都以该 worldId 为键收纳于此。
+ * 视图层只经 useWorkStore 读写此结构，禁止组件内私藏世界状态。
+ */
+export interface WorldBundle {
+  world: World;
+  clock: WorldClock;
+  entities: Record<string, WorldEntity>;
+  relations: Record<string, EntityRelation>;
+  variables: Record<string, Variable>;
+  foreshadows: Record<string, Foreshadow>;
+  timelineEvents: Record<string, TimelineEvent>;
+  snapshots: Record<string, WorldStateSnapshot>;
+  operations: Record<string, Operation>;
+  /** 最近一次操作推演结果（供生成链路组装 operationBlock） */
+  lastOperationResult?: OperationResult;
+  /** 最近一次推演推荐的走向选项 */
+  directionOptions: DirectionOption[];
+  /** 作者选定的走向 id */
+  selectedDirectionId?: string;
+  chapters: Record<string, Chapter>;
+  chapterVersions: Record<string, ChapterVersion>;
+  styleConfigs: Record<string, StyleConfig>;
+  generationRecords: Record<string, AIGenerationRecord>;
+  /** 关系图节点坐标缓存 */
+  graphPositions: Record<string, XYPosition>;
+}
+
+/** 构造一个空的世界数据聚合。 */
+export function emptyBundle(world: World): WorldBundle {
+  return {
+    world,
+    clock: { era: '启元', year: 1, season: '春' },
+    entities: {},
+    relations: {},
+    variables: {},
+    foreshadows: {},
+    timelineEvents: {},
+    snapshots: {},
+    operations: {},
+    directionOptions: [],
+    chapters: {},
+    chapterVersions: {},
+    styleConfigs: {},
+    generationRecords: {},
+    graphPositions: {},
+  };
+}
+
+/** 全局 store 的基础状态。 */
+export interface WorkState {
+  currentWorldId: string | null;
+  worlds: Record<string, WorldBundle>;
+}
+
+// 各 slice 接口在对应 slice 文件中定义，这里仅做前向类型声明以避免循环依赖问题。
+// 实际 WorkStore 类型在 workStore.ts 中由 5 个 slice 组合而成。
+export interface WorldSlice {
+  createWorld: (name: string, description?: string) => string;
+  updateWorldMeta: (
+    worldId: string,
+    patch: Partial<Pick<World, 'name' | 'description'>>,
+  ) => void;
+  deleteWorld: (worldId: string) => void;
+  addEntity: (worldId: string, input: import('../types/world').NewEntityInput) => string;
+  updateEntity: (
+    worldId: string,
+    id: string,
+    patch: Partial<WorldEntity>,
+  ) => void;
+  removeEntity: (worldId: string, id: string) => void;
+  addRelation: (
+    worldId: string,
+    input: import('../types/world').NewRelationInput,
+  ) => string;
+  updateRelation: (
+    worldId: string,
+    id: string,
+    patch: Partial<EntityRelation>,
+  ) => void;
+  removeRelation: (worldId: string, id: string) => void;
+  setEntityPosition: (
+    worldId: string,
+    id: string,
+    pos: XYPosition,
+  ) => void;
+  addVariable: (
+    worldId: string,
+    input: import('../types/world').NewVariableInput,
+  ) => string;
+  updateVariable: (
+    worldId: string,
+    id: string,
+    patch: Partial<Variable>,
+  ) => void;
+  removeVariable: (worldId: string, id: string) => void;
+  addForeshadow: (
+    worldId: string,
+    input: import('../types/world').NewForeshadowInput,
+  ) => string;
+  updateForeshadow: (
+    worldId: string,
+    id: string,
+    patch: Partial<Foreshadow>,
+  ) => void;
+  removeForeshadow: (worldId: string, id: string) => void;
+}
+
+export interface ConsoleSlice {
+  runOperation: (
+    worldId: string,
+    input: import('../types/console').NewOperationInput,
+  ) => OperationResult;
+  selectDirection: (worldId: string, directionId: string) => void;
+  logEvent: (
+    worldId: string,
+    event: {
+      title: string;
+      description: string;
+      type?: TimelineEvent['type'];
+      causedByOperationId?: string;
+      chapterId?: string;
+    },
+  ) => string;
+  advanceClock: (worldId: string, years?: number, season?: string) => void;
+}
+
+export interface ChapterSlice {
+  createChapter: (
+    worldId: string,
+    input: import('../types/chapter').NewChapterInput,
+  ) => string;
+  updateChapter: (
+    worldId: string,
+    id: string,
+    patch: Partial<Chapter>,
+  ) => void;
+  removeChapter: (worldId: string, id: string) => void;
+  saveChapterVersion: (
+    worldId: string,
+    chapterId: string,
+    input: {
+      content: string;
+      source: ChapterVersion['source'];
+      note?: string;
+      generationRecordId?: string;
+    },
+  ) => string;
+  setCurrentVersion: (
+    worldId: string,
+    chapterId: string,
+    versionId: string,
+  ) => void;
+}
+
+export interface StyleSlice {
+  getGlobalStyle: (worldId: string) => StyleConfig | undefined;
+  upsertGlobalStyle: (
+    worldId: string,
+    patch: Partial<StyleConfig>,
+  ) => string;
+  updateStyleConfig: (
+    worldId: string,
+    id: string,
+    patch: Partial<StyleConfig>,
+  ) => void;
+}
+
+export interface GenerationSlice {
+  generating: boolean;
+  offlineMode: boolean;
+  lastGenerationError?: string;
+  generateChapter: (
+    worldId: string,
+    opts?: import('../types/ai').GenerateChapterOptions,
+  ) => Promise<string | null>;
+  clearOfflineMode: () => void;
+  clearGenerationError: () => void;
+}
+
+export type WorkStore = WorkState &
+  WorldSlice &
+  ConsoleSlice &
+  ChapterSlice &
+  StyleSlice &
+  GenerationSlice;

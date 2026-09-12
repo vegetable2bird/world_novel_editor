@@ -1,0 +1,98 @@
+import { useState } from 'react';
+import {
+  Box,
+  Select,
+  MenuItem,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+  InputLabel,
+  FormControl,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { useWorkStore } from '../../store/workStore';
+
+/**
+ * 世界切换器：下拉切换当前世界，并提供"新建世界"入口。
+ * 切换/新建均只经 useWorkStore，保证以 worldId 为键的单一真相。
+ */
+export default function WorkSwitcher(): JSX.Element {
+  const worlds = useWorkStore((s) => s.worlds);
+  const currentWorldId = useWorkStore((s) => s.currentWorldId);
+  const createWorld = useWorkStore((s) => s.createWorld);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+
+  const worldList = Object.values(worlds);
+
+  const handleCreate = () => {
+    const finalName = name.trim() || '未命名世界';
+    createWorld(finalName);
+    setName('');
+    setOpen(false);
+  };
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <FormControl size="small" sx={{ minWidth: 180 }}>
+        <InputLabel id="world-select-label">当前世界</InputLabel>
+        <Select
+          labelId="world-select-label"
+          label="当前世界"
+          value={currentWorldId ?? ''}
+          onChange={(e) =>
+            useWorkStore.setState({ currentWorldId: e.target.value || null })
+          }
+        >
+          {worldList.map((w) => (
+            <MenuItem key={w.world.id} value={w.world.id}>
+              {w.world.name}
+            </MenuItem>
+          ))}
+          {worldList.length === 0 && (
+            <MenuItem value="" disabled>
+              暂无世界
+            </MenuItem>
+          )}
+        </Select>
+      </FormControl>
+      <Button
+        startIcon={<AddIcon />}
+        variant="contained"
+        size="small"
+        onClick={() => setOpen(true)}
+      >
+        新建世界
+      </Button>
+
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>新建世界</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            世界是全部设定、操作与章节的根。新建后将预置国力/民心/灵气变量与全局风格配置。
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="世界名称"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCreate();
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>取消</Button>
+          <Button variant="contained" onClick={handleCreate}>
+            创建
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
