@@ -13,11 +13,19 @@ export const createChapterSlice: StateCreator<WorkStore, [], [], ChapterSlice> =
   createChapter: (worldId, input): string => {
     const bundle = get().worlds[worldId];
     if (!bundle) throw new Error('世界不存在，无法创建章节');
+    // 章节必须归属一部作品：缺省取当前激活作品，再退化为世界首部作品
+    const bookId =
+      input.bookId ?? get().currentBookId ?? Object.keys(bundle.books)[0];
+    if (!bookId || !bundle.books[bookId]) {
+      throw new Error('没有可用的作品（Book），无法创建章节');
+    }
     const id = newId('ch');
     const ts = nowISO();
+    // 章节序号在所属作品内独立编号
+    const siblings = Object.values(bundle.chapters).filter((c) => c.bookId === bookId);
     const index =
       input.index ??
-      Object.values(bundle.chapters).reduce((max, c) => Math.max(max, c.index), 0) + 1;
+      siblings.reduce((max, c) => Math.max(max, c.index), 0) + 1;
 
     // 创建空的初始版本，便于编辑器直接打开
     const versionId = newId('ver');
@@ -34,6 +42,7 @@ export const createChapterSlice: StateCreator<WorkStore, [], [], ChapterSlice> =
     const chapter: Chapter = {
       id,
       worldId,
+      bookId,
       index,
       title: input.title.trim() || `第 ${index} 章`,
       outline: input.outline,

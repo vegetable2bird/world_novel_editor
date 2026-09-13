@@ -44,9 +44,13 @@ export default function WorkSwitcher(): JSX.Element {
           labelId="world-select-label"
           label="当前世界"
           value={currentWorldId ?? ''}
-          onChange={(e) =>
-            useWorkStore.setState({ currentWorldId: e.target.value || null })
-          }
+          onChange={(e) => {
+            const wid = e.target.value || null;
+            const bookId = wid
+              ? Object.keys(useWorkStore.getState().worlds[wid]?.books ?? {})[0] ?? null
+              : null;
+            useWorkStore.setState({ currentWorldId: wid, currentBookId: bookId });
+          }}
         >
           {worldList.map((w) => (
             <MenuItem key={w.world.id} value={w.world.id}>

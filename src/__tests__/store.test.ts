@@ -3,8 +3,8 @@ import { useWorkStore } from '../store/workStore';
 
 describe('worldStore slices', () => {
   beforeEach(() => {
-    // 清空所有世界，保证测试隔离
-    useWorkStore.setState({ worlds: {}, currentWorldId: null });
+    // 清空所有世界与当前激活作品，保证测试隔离
+    useWorkStore.setState({ worlds: {}, currentWorldId: null, currentBookId: null });
   });
 
   it('createWorld 预置 3 个变量（国力/民心/灵气）与全局风格', () => {
@@ -95,5 +95,53 @@ describe('worldStore slices', () => {
     expect(returned).toBe(cid);
     const ver = useWorkStore.getState().worlds[id].chapters[cid].currentVersionId;
     expect(useWorkStore.getState().worlds[id].chapterVersions[ver].source).toBe('ai');
+  });
+
+  it('createWorld 默认创建一部作品(卷) 并激活 currentBookId', () => {
+    const id = useWorkStore.getState().createWorld('W-book');
+    const bundle = useWorkStore.getState().worlds[id];
+    const books = Object.values(bundle.books);
+    expect(books).toHaveLength(1);
+    expect(books[0].name).toBe('主线');
+    expect(books[0].worldId).toBe(id);
+    expect(useWorkStore.getState().currentBookId).toBe(books[0].id);
+    expect(bundle.chapters).toEqual({});
+  });
+
+  it('createBook / removeBook 创建并级联清理作品下章节', () => {
+    const id = useWorkStore.getState().createWorld('W-books');
+    const firstBook = Object.values(useWorkStore.getState().worlds[id].books)[0];
+    const newBookId = useWorkStore.getState().createBook(id, { name: '外传' });
+    let books = Object.values(useWorkStore.getState().worlds[id].books);
+    expect(books).toHaveLength(2);
+
+    // 在新作品下建章节
+    const cid = useWorkStore.getState().createChapter(id, {
+      title: '外传第一章',
+      bookId: newBookId,
+    });
+    const ch = useWorkStore.getState().worlds[id].chapters[cid];
+    expect(ch.bookId).toBe(newBookId);
+
+    // 删除新作品，其下章节应被级联清理
+    useWorkStore.getState().removeBook(id, newBookId);
+    books = Object.values(useWorkStore.getState().worlds[id].books);
+    expect(books).toHaveLength(1);
+    expect(useWorkStore.getState().worlds[id].chapters[cid]).toBeUndefined();
+    // currentBookId 仍为原激活作品（未删除的那个）
+    expect(useWorkStore.getState().currentBookId).toBe(firstBook.id);
+  });
+
+  it('createChapter 章节序号在所属作品内独立编号', () => {
+    const id = useWorkStore.getState().createWorld('W-idx');
+    const bookA = Object.values(useWorkStore.getState().worlds[id].books)[0];
+    const bookB = useWorkStore.getState().createBook(id, { name: '第二部' });
+    const a1 = useWorkStore.getState().createChapter(id, { title: 'A1', bookId: bookA.id });
+    const b1 = useWorkStore.getState().createChapter(id, { title: 'B1', bookId: bookB });
+    const a2 = useWorkStore.getState().createChapter(id, { title: 'A2', bookId: bookA.id });
+    expect(useWorkStore.getState().worlds[id].chapters[a1].index).toBe(1);
+    expect(useWorkStore.getState().worlds[id].chapters[a2].index).toBe(2);
+    // 第二部作品的编号独立从 1 开始
+    expect(useWorkStore.getState().worlds[id].chapters[b1].index).toBe(1);
   });
 });

@@ -42,7 +42,7 @@
 └─────────────────────────────────────────────────────────────────────┘
             │ 调用            │ 调用                │ 调用
 ┌─────────────────────────── 状态层 (Store) ──────────────────────────┐
-│  useWorkStore = worldSlice + consoleSlice + chapterSlice             │
+│  useWorkStore = worldSlice + consoleSlice + chapterSlice + bookSlice │
 │                 + styleSlice + generationSlice  （全部以 worldId 为键）│
 └─────────────────────────────────────────────────────────────────────┘
        │ 持久化(订阅)                      │ 编排
@@ -96,6 +96,7 @@ world_novel_editor/
 │   │   ├── worldSlice.ts
 │   │   ├── consoleSlice.ts
 │   │   ├── chapterSlice.ts
+│   │   ├── bookSlice.ts              # 作品（Book）层：World 与 Chapter 的中间层
 │   │   ├── styleSlice.ts
 │   │   └── generationSlice.ts
 │   ├── services/
@@ -243,10 +244,16 @@ interface DirectionOption {
 
 // types/chapter.ts
 interface Chapter {
-  id: string; worldId: string; index: number; title: string;
+  id: string; worldId: string; bookId: string; index: number; title: string;
   outline?: string; currentVersionId: string;
   status: 'draft' | 'revising' | 'published';
   createdAt: string; updatedAt: string;
+}
+
+// types/book.ts（v2 P1+ 新增：World 与 Chapter 的中间层）
+interface Book {
+  id: string; worldId: string; name: string; description?: string;
+  order: number; createdAt: string; updatedAt: string;
 }
 interface ChapterVersion {
   id: string; chapterId: string; content: string;   // Markdown

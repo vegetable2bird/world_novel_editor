@@ -7,9 +7,12 @@ import type {
 } from '../types/world';
 import type { TimelineEvent, WorldStateSnapshot } from '../types/timeline';
 import type { Operation, OperationResult, DirectionOption } from '../types/console';
+import type { Book } from '../types/book';
 import type { Chapter, ChapterVersion } from '../types/chapter';
 import type { StyleConfig } from '../types/style';
 import type { AIGenerationRecord } from '../types/ai';
+// 重新导出 Book 等类型，便于其他模块从 store/types 统一引用
+export type { Book } from '../types/book';
 
 /** 关系图节点坐标（内部使用，不参与对外契约）。 */
 export interface XYPosition {
@@ -47,6 +50,8 @@ export interface WorldBundle {
   selectedDirectionId?: string;
   chapters: Record<string, Chapter>;
   chapterVersions: Record<string, ChapterVersion>;
+  /** 作品（卷）：World 与 Chapter 之间的中间层，一部作品归属一个世界 */
+  books: Record<string, Book>;
   styleConfigs: Record<string, StyleConfig>;
   generationRecords: Record<string, AIGenerationRecord>;
   /** 关系图节点坐标缓存 */
@@ -68,6 +73,7 @@ export function emptyBundle(world: World): WorldBundle {
     directionOptions: [],
     chapters: {},
     chapterVersions: {},
+    books: {},
     styleConfigs: {},
     generationRecords: {},
     graphPositions: {},
@@ -77,6 +83,8 @@ export function emptyBundle(world: World): WorldBundle {
 /** 全局 store 的基础状态。 */
 export interface WorkState {
   currentWorldId: string | null;
+  /** 当前激活的作品（Book）id；同一时刻仅一部作品承接章节操作与生成 */
+  currentBookId: string | null;
   worlds: Record<string, WorldBundle>;
 }
 
@@ -180,6 +188,24 @@ export interface ChapterSlice {
   ) => void;
 }
 
+export interface BookSlice {
+  /** 在世界下新建一部作品（卷） */
+  createBook: (
+    worldId: string,
+    input: import('../types/book').NewBookInput,
+  ) => string;
+  /** 更新作品元数据（名称/描述/排序） */
+  updateBook: (
+    worldId: string,
+    id: string,
+    patch: Partial<Book>,
+  ) => void;
+  /** 删除作品，并级联清理其下的章节、版本与生成记录 */
+  removeBook: (worldId: string, id: string) => void;
+  /** 切换当前激活作品（仅当其属于该世界时生效） */
+  setCurrentBook: (worldId: string, bookId: string) => void;
+}
+
 export interface StyleSlice {
   getGlobalStyle: (worldId: string) => StyleConfig | undefined;
   upsertGlobalStyle: (
@@ -209,5 +235,6 @@ export type WorkStore = WorkState &
   WorldSlice &
   ConsoleSlice &
   ChapterSlice &
+  BookSlice &
   StyleSlice &
   GenerationSlice;

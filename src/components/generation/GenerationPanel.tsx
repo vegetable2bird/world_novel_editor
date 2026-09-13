@@ -12,7 +12,11 @@ import {
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useWorkStore } from '../../store/workStore';
-import { useCurrentWorld, useCurrentWorldId } from '../../hooks/useWorldState';
+import {
+  useCurrentWorld,
+  useCurrentWorldId,
+  useCurrentBookId,
+} from '../../hooks/useWorldState';
 import { useGeneration } from '../../hooks/useGeneration';
 import GenerationPreview from './GenerationPreview';
 
@@ -23,6 +27,7 @@ import GenerationPreview from './GenerationPreview';
 export default function GenerationPanel(): JSX.Element {
   const worldId = useCurrentWorldId();
   const world = useCurrentWorld();
+  const currentBookId = useCurrentBookId();
   const { generating, offlineMode, error, generate, clearError } = useGeneration();
   const [targetWords, setTargetWords] = useState(2000);
 
@@ -34,7 +39,14 @@ export default function GenerationPanel(): JSX.Element {
       : undefined,
   );
 
-  const chapters = world ? Object.values(world.chapters) : [];
+  const currentBook = useWorkStore((s) =>
+    worldId && currentBookId ? s.worlds[worldId]?.books[currentBookId] : undefined,
+  );
+
+  // 仅统计当前作品（卷）下的章节，预览"最近一章"
+  const chapters = world
+    ? Object.values(world.chapters).filter((c) => c.bookId === currentBookId)
+    : [];
   const latest = [...chapters].sort((a, b) => b.index - a.index)[0];
   const version = latest && world ? world.chapterVersions[latest.currentVersionId] : undefined;
 
@@ -55,6 +67,11 @@ export default function GenerationPanel(): JSX.Element {
           <Chip size="small" label={`文风·${style.tone}`} />
           <Chip size="small" label={`视角·${style.pov}`} />
           <Chip size="small" label={`节奏·${style.pacing}`} />
+        </Stack>
+      )}
+      {currentBook && (
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+          <Chip size="small" color="primary" variant="outlined" label={`目标作品·${currentBook.name}`} />
         </Stack>
       )}
 

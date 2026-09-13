@@ -6,6 +6,8 @@
 export interface Chapter {
   id: string;
   worldId: string;
+  /** 所属作品（Book）id，章节经作品归属到世界 */
+  bookId: string;
   index: number;
   title: string;
   outline?: string;
@@ -32,6 +34,8 @@ export interface ChapterVersion {
 /** 新建章节的输入载荷 */
 export interface NewChapterInput {
   title: string;
+  /** 所属作品 id；缺省时取当前激活作品（或世界首部作品） */
+  bookId?: string;
   index?: number;
   outline?: string;
 }

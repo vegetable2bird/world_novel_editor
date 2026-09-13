@@ -60,7 +60,15 @@ classDiagram
         +string label
         +string estimatedSummary
     }
+    class Book {
+        +string id
+        +string worldId
+        +string name
+        +string description
+        +number order
+    }
     class Chapter {
+        +string bookId
         +number index
         +string title
         +string currentVersionId
@@ -100,9 +108,10 @@ classDiagram
     World "1" *-- "0..*" Foreshadow : 拥有
     World "1" *-- "0..*" TimelineEvent : 记录
     World "1" *-- "0..*" WorldStateSnapshot : 快照
-    World "1" *-- "0..*" Chapter : 包含
+    World "1" *-- "0..*" Book : 包含作品
     World "1" *-- "0..*" StyleConfig : 配置
     WorldEntity "1" *-- "0..*" EntityRelation : 端点
+    Book "1" *-- "0..*" Chapter : 包含章节
     Chapter "1" *-- "0..*" ChapterVersion : 版本
     Operation "1" *-- "1" OperationResult : 推演
     OperationResult "1" *-- "0..*" DirectionOption : 推荐

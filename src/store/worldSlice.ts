@@ -7,6 +7,7 @@ import type {
   Variable,
   Foreshadow,
 } from '../types/world';
+import type { Book } from '../types/book';
 import type { StyleConfig } from '../types/style';
 import { newId, nowISO } from '../utils/id';
 import { withBundle } from './mutate';
@@ -66,9 +67,23 @@ export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (se
     };
     bundle.styleConfigs[sid] = style;
 
+    // 默认作品（卷）：World 与 Chapter 的中间层，使章节开箱即有归属
+    const bookId = newId('book');
+    const book: Book = {
+      id: bookId,
+      worldId: id,
+      name: '主线',
+      description: '默认作品（卷），可重命名或新增其他作品。',
+      order: 0,
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    bundle.books[bookId] = book;
+
     set((state) => ({
       worlds: { ...state.worlds, [id]: bundle },
       currentWorldId: id,
+      currentBookId: bookId,
     }));
     return id;
   },
@@ -91,7 +106,14 @@ export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (se
         state.currentWorldId === worldId
           ? remaining[0] ?? null
           : state.currentWorldId;
-      return { worlds, currentWorldId };
+      // 若删世界导致当前激活作品失效，跟随切换到新当前世界的第一部作品
+      let currentBookId = state.currentBookId;
+      if (state.currentWorldId === worldId) {
+        currentBookId = currentWorldId
+          ? Object.keys(worlds[currentWorldId]?.books ?? {})[0] ?? null
+          : null;
+      }
+      return { worlds, currentWorldId, currentBookId };
     });
   },
 

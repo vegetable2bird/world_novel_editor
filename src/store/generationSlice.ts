@@ -34,14 +34,19 @@ export const createGenerationSlice: StateCreator<WorkStore, [], [], GenerationSl
     }
     set({ generating: true, offlineMode: false, lastGenerationError: undefined });
 
-    // 1) 确定/创建目标章节
+    // 1) 确定/创建目标章节（归属于当前激活作品）
     let chapterId = opts?.chapterId;
+    const activeBookId =
+      get().currentBookId ?? Object.keys(bundle0.books)[0] ?? undefined;
     if (!chapterId) {
-      const nextIndex =
-        Object.values(bundle0.chapters).reduce((m, c) => Math.max(m, c.index), 0) + 1;
+      const siblings = Object.values(bundle0.chapters).filter(
+        (c) => c.bookId === activeBookId,
+      );
+      const nextIndex = siblings.reduce((m, c) => Math.max(m, c.index), 0) + 1;
       chapterId = get().createChapter(worldId, {
         title: `第 ${nextIndex} 章`,
         index: nextIndex,
+        bookId: activeBookId,
       });
     }
     const chapter = get().worlds[worldId]?.chapters[chapterId];

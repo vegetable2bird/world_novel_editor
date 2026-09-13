@@ -4,6 +4,7 @@
 export * from './world';
 export * from './timeline';
 export * from './console';
+export * from './book';
 export * from './chapter';
 export * from './style';
 export * from './ai';
