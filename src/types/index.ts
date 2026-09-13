@@ -8,3 +8,4 @@ export * from './book';
 export * from './chapter';
 export * from './style';
 export * from './ai';
+export * from './character';

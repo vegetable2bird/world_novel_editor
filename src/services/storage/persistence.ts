@@ -32,12 +32,23 @@ function normalizeBundle(b: WorldBundle): WorldBundle {
   return { ...b, books };
 }
 
-/** 从 IndexedDB 载入已持久化世界到内存 store。 */
+/**
+ * 兼容 P3 之前的旧数据：角色系统的三个集合（总库/角色卡/心情）在旧版本不存在，
+ * 这里补为空中对象，保证旧数据在新模型下仍可正常打开。
+ */
+function ensureCharacterFields(b: WorldBundle): WorldBundle {
+  return {
+    ...b,
+    characterRegistry: b.characterRegistry ?? {},
+    characterInstances: b.characterInstances ?? {},
+    moodEntries: b.moodEntries ?? {},
+  };
+}
 export async function loadFromDB(): Promise<void> {
   try {
     const raw = await db.worldBundles.toArray();
     if (raw.length === 0) return;
-    const bundles = raw.map(normalizeBundle);
+    const bundles = raw.map(normalizeBundle).map(ensureCharacterFields);
     const worlds: Record<string, WorldBundle> = {};
     for (const b of bundles) {
       worlds[b.world.id] = b;

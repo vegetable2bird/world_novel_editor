@@ -97,6 +97,7 @@ world_novel_editor/
 │   │   ├── consoleSlice.ts
 │   │   ├── chapterSlice.ts
 │   │   ├── bookSlice.ts              # 作品（Book）层：World 与 Chapter 的中间层
+│   │   ├── characterSlice.ts         # 角色系统：总库/角色卡/心情时间线（v2 P3）
 │   │   ├── styleSlice.ts
 │   │   └── generationSlice.ts
 │   ├── services/
@@ -261,6 +262,26 @@ interface ChapterVersion {
   generationRecordId?: string; wordCount: number;
   createdAt: string; note?: string;
 }
+
+// types/character.ts（v2 P3 新增：三层角色系统）
+interface CharacterRegistryEntry {  // 角色总库（宏观，跨书）
+  id: string; worldId: string; name: string; archetype: string;
+  summary?: string; tags: string[]; richText?: string; inContext: boolean;
+  createdAt: string; updatedAt: string;
+}
+interface CharacterInstance {       // 角色卡（微观，本卷化身）
+  id: string; worldId: string; bookId: string; registryId?: string; // 关联总库实现跨书
+  name: string; portrait: Record<string, unknown>; biography?: string;
+  currentMood?: string; status: 'active' | 'minor' | 'offstage';
+  createdAt: string; updatedAt: string;
+}
+interface MoodEntry {               // 心情时间线节点
+  id: string; worldId: string; characterInstanceId: string;
+  chapterId?: string; eventId?: string; clockLabel: string;
+  mood: string; note?: string; createdAt: string;
+}
+// 关系：World 1-* CharacterRegistryEntry；Book 1-* CharacterInstance；
+//       CharacterInstance 1-* MoodEntry。
 
 // types/style.ts
 interface StyleConfig {
@@ -602,7 +623,8 @@ export const WorldEntitySchema = z.object({
 [约束] 首尾不解释、不输出元说明；严格回收 requiredForeshadows。
 ```
 - `contextAssembler` 相关性打分：`inContext` 权重最高 → 章节相关实体 → 活跃伏笔 → 近期事件；超 token 预算时按得分截断（P1 升级为本地向量检索）。
-- `buildBookContextBlock`（v2 P2）：提供 `bookId` 时，在段1追加「当前作品定位」（作品名/概要/卷序/已写章节数）与「同作品前文回顾」（序号更小的最近 5 章标题+大纲+前文摘要），让生成在所属作品内保持连贯；世界上下文预算相应压缩（bookId 存在时 1800，否则 2500）。
+- `buildBookContextBlock`（v2 P2）：提供 `bookId` 时，在段1追加「当前作品定位」（作品名/概要/卷序/已写章节数）与「同作品前文回顾」（序号更小的最近 5 章标题+大纲+前文摘要），让生成在所属作品内保持连贯。
+- `buildCastSection`（v2 P3）：提供 `bookId` 时，在段1追加「本卷出场角色」段落，汇总该作品内所有角色卡的画像要点与当前心情基调，使 AI 生成时把握人物塑造；世界上下文预算相应压缩（bookId 存在时 1500，否则 2500）。
 - 叙事推演引擎 `suggestPlotBranches`（v2 P2，`services/narrative/plotSuggestion.ts`）：基于世界状态+作品进度+伏笔/事件/操作走向/变量趋势确定性产出叙事分支建议，在操作台"情节推演"页供作者一键采纳生成或仅存大纲（详见第九节）。
 
 ### 7.4 风格参数 Schema（`src/schemas/styleSchema.ts`）
@@ -641,7 +663,7 @@ export const StyleConfigSchema = z.object({
 
 ## 九、给工程师（寇豆码）的落地下注
 
-- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成，P2 内容生成增强进行中：作品感知上下文 + 叙事推演引擎）。
+- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成；P2 内容生成增强已完成：作品感知上下文 + 叙事推演引擎；P3 角色系统已完成：角色总库 + 角色卡 + 心情时间线）。
 - **状态唯一真相**：所有视图经 `useWorkStore` 读写，禁止组件内私藏世界状态。
 - **密钥红线**：前端只调 `/api/ai/generate`，任何 API Key 只在 `server/.env`，绝不进 `src/` 或前端 bundle。
 - **三段式 prompt** 严格按 `promptTemplates.ts` 组装，`contextAssembler` 负责截断，避免超 token。

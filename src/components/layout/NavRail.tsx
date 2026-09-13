@@ -13,6 +13,7 @@ import {
 import PublicIcon from '@mui/icons-material/Public';
 import HubIcon from '@mui/icons-material/Hub';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 export interface NavItem {
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/world', label: '世界观', icon: <PublicIcon /> },
   { to: '/console', label: '操作台', icon: <HubIcon /> },
   { to: '/chapters', label: '章节', icon: <MenuBookIcon /> },
+  { to: '/characters', label: '角色', icon: <PeopleIcon /> },
   { to: '/settings', label: '设置', icon: <SettingsIcon /> },
 ];
 

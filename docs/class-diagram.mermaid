@@ -67,6 +67,26 @@ classDiagram
         +string description
         +number order
     }
+    class CharacterRegistryEntry {
+        +string worldId
+        +string name
+        +string archetype
+        +string[] tags
+        +boolean inContext
+    }
+    class CharacterInstance {
+        +string bookId
+        +string registryId
+        +string name
+        +object portrait
+        +string currentMood
+        +enum status
+    }
+    class MoodEntry {
+        +string characterInstanceId
+        +string clockLabel
+        +string mood
+    }
     class Chapter {
         +string bookId
         +number index
@@ -120,9 +140,13 @@ classDiagram
     World "1" *-- "0..*" TimelineEvent : 记录
     World "1" *-- "0..*" WorldStateSnapshot : 快照
     World "1" *-- "0..*" Book : 包含作品
+    World "1" *-- "0..*" CharacterRegistryEntry : 总库角色
     World "1" *-- "0..*" StyleConfig : 配置
     WorldEntity "1" *-- "0..*" EntityRelation : 端点
     Book "1" *-- "0..*" Chapter : 包含章节
+    Book "1" *-- "0..*" CharacterInstance : 包含角色卡
+    CharacterRegistryEntry "1" o-- "0..*" CharacterInstance : 跨书出演
+    CharacterInstance "1" *-- "0..*" MoodEntry : 心情时间线
     Chapter "1" *-- "0..*" ChapterVersion : 版本
     Operation "1" *-- "1" OperationResult : 推演
     OperationResult "1" *-- "0..*" DirectionOption : 推荐

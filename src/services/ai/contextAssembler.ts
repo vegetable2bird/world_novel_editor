@@ -17,6 +17,8 @@ import { truncateToWords } from '../../utils/text';
  */
 export interface AssembleContextOptions {
   maxWords?: number;
+  /** 目标作品（卷）id；提供时并入该作品「出场角色」摘要，使生成聚焦本卷人物 */
+  bookId?: string;
 }
 
 export function assembleContext(
@@ -100,6 +102,37 @@ export function assembleContext(
     sections.push('## 世界状态变量\n' + vLines);
   }
 
+  // 6) 本卷出场角色（提供 bookId 时）：画像 + 当前心情，帮助 AI 把握人物状态
+  const charSection = buildCastSection(bundle, opts?.bookId);
+  if (charSection) {
+    sections.push(charSection);
+  }
+
   const text = sections.join('\n\n');
   return truncateToWords(text, maxWords);
+}
+
+/**
+ * 组装「本卷出场角色」段落：列出指定作品（卷）内所有角色卡，
+ * 含其画像要点与当前心情基调，供 AI 生成时把握人物塑造。
+ */
+export function buildCastSection(
+  bundle: WorldBundle,
+  bookId?: string,
+): string | null {
+  if (!bookId) return null;
+  const cast = Object.values(bundle.characterInstances).filter(
+    (c) => c.bookId === bookId,
+  );
+  if (cast.length === 0) return null;
+
+  const lines = cast.map((c) => {
+    const portrait = Object.entries(c.portrait ?? {})
+      .filter(([, v]) => v !== '' && v != null)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('；');
+    const mood = c.currentMood ? `｜当前心情：${c.currentMood}` : '';
+    return `- ${c.name}（${c.status}）${portrait ? `｜${portrait}` : ''}${mood}`;
+  });
+  return `## 本卷出场角色\n${lines.join('\n')}`;
 }

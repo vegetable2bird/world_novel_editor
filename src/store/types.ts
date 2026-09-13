@@ -11,8 +11,18 @@ import type { Book } from '../types/book';
 import type { Chapter, ChapterVersion } from '../types/chapter';
 import type { StyleConfig } from '../types/style';
 import type { AIGenerationRecord } from '../types/ai';
+import type {
+  CharacterRegistryEntry,
+  CharacterInstance,
+  MoodEntry,
+} from '../types/character';
 // 重新导出 Book 等类型，便于其他模块从 store/types 统一引用
 export type { Book } from '../types/book';
+export type {
+  CharacterRegistryEntry,
+  CharacterInstance,
+  MoodEntry,
+} from '../types/character';
 
 /** 关系图节点坐标（内部使用，不参与对外契约）。 */
 export interface XYPosition {
@@ -52,6 +62,12 @@ export interface WorldBundle {
   chapterVersions: Record<string, ChapterVersion>;
   /** 作品（卷）：World 与 Chapter 之间的中间层，一部作品归属一个世界 */
   books: Record<string, Book>;
+  /** 角色总库（宏观）：跨书出演的角色条目，归属世界 */
+  characterRegistry: Record<string, CharacterRegistryEntry>;
+  /** 角色卡（微观）：某一作品内的具体化身，归属作品（卷） */
+  characterInstances: Record<string, CharacterInstance>;
+  /** 心情时间线节点，归属角色卡 */
+  moodEntries: Record<string, MoodEntry>;
   styleConfigs: Record<string, StyleConfig>;
   generationRecords: Record<string, AIGenerationRecord>;
   /** 关系图节点坐标缓存 */
@@ -74,6 +90,9 @@ export function emptyBundle(world: World): WorldBundle {
     chapters: {},
     chapterVersions: {},
     books: {},
+    characterRegistry: {},
+    characterInstances: {},
+    moodEntries: {},
     styleConfigs: {},
     generationRecords: {},
     graphPositions: {},
@@ -219,6 +238,44 @@ export interface StyleSlice {
   ) => void;
 }
 
+export interface CharacterSlice {
+  /** 在总库新建角色条目（跨书） */
+  createRegistryCharacter: (
+    worldId: string,
+    input: import('../types/character').NewRegistryCharacterInput,
+  ) => string;
+  updateRegistryCharacter: (
+    worldId: string,
+    id: string,
+    patch: Partial<CharacterRegistryEntry>,
+  ) => void;
+  removeRegistryCharacter: (worldId: string, id: string) => void;
+
+  /** 在指定作品（卷）新建角色卡（可关联总库条目实现跨书出演） */
+  createCharacterInstance: (
+    worldId: string,
+    input: import('../types/character').NewCharacterInstanceInput,
+  ) => string;
+  updateCharacterInstance: (
+    worldId: string,
+    id: string,
+    patch: Partial<CharacterInstance>,
+  ) => void;
+  removeCharacterInstance: (worldId: string, id: string) => void;
+
+  /** 为角色卡新增一条心情时间线节点 */
+  addMoodEntry: (
+    worldId: string,
+    input: import('../types/character').NewMoodEntryInput,
+  ) => string;
+  updateMoodEntry: (
+    worldId: string,
+    id: string,
+    patch: Partial<MoodEntry>,
+  ) => void;
+  removeMoodEntry: (worldId: string, id: string) => void;
+}
+
 export interface GenerationSlice {
   generating: boolean;
   offlineMode: boolean;
@@ -236,5 +293,6 @@ export type WorkStore = WorkState &
   ConsoleSlice &
   ChapterSlice &
   BookSlice &
+  CharacterSlice &
   StyleSlice &
   GenerationSlice;

@@ -58,9 +58,35 @@ describe('contextAssembler', () => {
     expect(ctx).not.toContain('伏笔二');
   });
 
-  it('空世界产出不含截断标记', () => {
+  it('提供 bookId 时并入本卷出场角色段落', () => {
     const b = emptyBundle(mkWorld());
+    b.books['bk'] = { id: 'bk', worldId: 'w', name: '主线', description: '', order: 0, createdAt: 't', updatedAt: 't' };
+    b.characterInstances['ci1'] = {
+      id: 'ci1', worldId: 'w', bookId: 'bk', name: '叶凡',
+      portrait: { 要点: '坚毅' }, biography: '', currentMood: '愤懑', status: 'active',
+      createdAt: 't', updatedAt: 't',
+    };
+    // 另一部作品下的角色不应出现
+    b.books['bk2'] = { id: 'bk2', worldId: 'w', name: '外传', description: '', order: 1, createdAt: 't', updatedAt: 't' };
+    b.characterInstances['ci2'] = {
+      id: 'ci2', worldId: 'w', bookId: 'bk2', name: '配角', portrait: {}, status: 'minor',
+      createdAt: 't', updatedAt: 't',
+    };
+    const ctx = assembleContext(b, { bookId: 'bk' });
+    expect(ctx).toContain('本卷出场角色');
+    expect(ctx).toContain('叶凡');
+    expect(ctx).toContain('愤懑');
+    expect(ctx).not.toContain('配角');
+  });
+
+  it('不提供 bookId 时不产生本卷出场角色段落', () => {
+    const b = emptyBundle(mkWorld());
+    b.books['bk'] = { id: 'bk', worldId: 'w', name: '主线', description: '', order: 0, createdAt: 't', updatedAt: 't' };
+    b.characterInstances['ci1'] = {
+      id: 'ci1', worldId: 'w', bookId: 'bk', name: '叶凡', portrait: {}, status: 'active',
+      createdAt: 't', updatedAt: 't',
+    };
     const ctx = assembleContext(b);
-    expect(ctx).not.toContain('上下文已截断');
+    expect(ctx).not.toContain('本卷出场角色');
   });
 });

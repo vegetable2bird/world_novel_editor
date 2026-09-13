@@ -140,9 +140,11 @@ export function buildBookContextBlock(input: {
 export function assembleAIRequest(input: AssembleRequestInput): AIRequest {
   const { bundle, style, index, targetWords, chapterId, bookId, outline } = input;
 
-  // 段1：世界观上下文 + 作品定位/前文回顾。提供 bookId 时压缩世界上下文预算以腾出空间。
+  // 段1：世界观上下文 + 作品定位/前文回顾。提供 bookId 时压缩世界上下文预算以腾出空间，
+  // 同时并入该作品的出场角色摘要。
   const worldContext = assembleContext(bundle, {
-    maxWords: bookId ? 1800 : 2500,
+    maxWords: bookId ? 1500 : 2500,
+    bookId,
   });
   const bookContext = buildBookContextBlock({ bundle, bookId, currentIndex: index });
   const contextBlock = [worldContext, bookContext].filter(Boolean).join('\n\n');

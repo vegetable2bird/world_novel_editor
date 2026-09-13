@@ -4,6 +4,7 @@ import WorldPage from './pages/WorldPage';
 import ConsolePage from './pages/ConsolePage';
 import ChapterListPage from './pages/ChapterListPage';
 import EditorPage from './pages/EditorPage';
+import CharacterPage from './pages/CharacterPage';
 import SettingsPage from './pages/SettingsPage';
 
 /**
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: 'console', element: <ConsolePage /> },
       { path: 'chapters', element: <ChapterListPage /> },
       { path: 'chapters/:chapterId', element: <EditorPage /> },
+      { path: 'characters', element: <CharacterPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <Navigate to="/world" replace /> },
     ],
