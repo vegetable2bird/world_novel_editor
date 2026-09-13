@@ -53,6 +53,10 @@ export interface GenerateChapterOptions {
   /** 提示后端优先使用的 provider（最终由后端密钥决定） */
   providerHint?: AIProviderName;
   targetWords?: number;
+  /** 目标作品（卷）id；缺省取当前激活作品 */
+  bookId?: string;
+  /** 本章创作意图 / 大纲，将并入生成提示（作者意图优先于操作推演段） */
+  outline?: string;
 }
 
 /** 前端可读的 AI 配置视图（不含密钥）。 */

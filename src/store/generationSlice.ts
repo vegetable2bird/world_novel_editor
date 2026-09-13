@@ -37,7 +37,7 @@ export const createGenerationSlice: StateCreator<WorkStore, [], [], GenerationSl
     // 1) 确定/创建目标章节（归属于当前激活作品）
     let chapterId = opts?.chapterId;
     const activeBookId =
-      get().currentBookId ?? Object.keys(bundle0.books)[0] ?? undefined;
+      opts?.bookId ?? get().currentBookId ?? Object.keys(bundle0.books)[0] ?? undefined;
     if (!chapterId) {
       const siblings = Object.values(bundle0.chapters).filter(
         (c) => c.bookId === activeBookId,
@@ -56,8 +56,10 @@ export const createGenerationSlice: StateCreator<WorkStore, [], [], GenerationSl
     }
     const index = chapter.index;
     const targetWords = opts?.targetWords ?? 2000;
+    // 创作意图：优先用调用方传入的大纲，否则取章节自身已有大纲
+    const outline = opts?.outline ?? chapter.outline;
 
-    // 2) 组装三段式请求（contextBlock + operationBlock + styleBlock）
+    // 2) 组装三段式请求（contextBlock + operationBlock + styleBlock，融入作品感知上下文）
     const freshBundle = get().worlds[worldId]!;
     const style = get().getGlobalStyle(worldId);
     const request = assembleAIRequest({
@@ -66,6 +68,8 @@ export const createGenerationSlice: StateCreator<WorkStore, [], [], GenerationSl
       index,
       targetWords,
       chapterId,
+      bookId: activeBookId,
+      outline,
     });
 
     // 3) 调用后端 / 兜底

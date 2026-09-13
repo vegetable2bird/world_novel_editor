@@ -3,10 +3,12 @@ import {
   buildStyleBlock,
   buildOperationBlock,
   assembleAIRequest,
+  buildBookContextBlock,
   composeMockChapter,
 } from '../services/ai/promptBuilder';
 import { emptyBundle } from '../store/types';
 import type { World } from '../types/world';
+import type { Book } from '../types/book';
 import type { StyleConfig } from '../types/style';
 import type { OperationResult } from '../types/console';
 
@@ -116,5 +118,63 @@ describe('promptBuilder', () => {
     const c = composeMockChapter({ worldName: '界', tone: '史诗', operationSummary: '战火起', requiredForeshadows: [], targetWords: 1000 });
     expect(c.length).toBeGreaterThan(0);
     expect(c).toContain('离线演示');
+  });
+
+  it('buildBookContextBlock 注入作品定位与同作品前文回顾', () => {
+    const b = emptyBundle(mkWorld());
+    const book: Book = {
+      id: 'bk1', worldId: 'w', name: '主线', description: '正道崛起', order: 0,
+      createdAt: 't', updatedAt: 't',
+    };
+    b.books['bk1'] = book;
+    b.chapters['c1'] = {
+      id: 'c1', worldId: 'w', bookId: 'bk1', index: 1, title: '第一章', outline: '起',
+      currentVersionId: 'v1', status: 'draft', createdAt: 't', updatedAt: 't',
+    };
+    b.chapterVersions['v1'] = {
+      id: 'v1', chapterId: 'c1', content: '苍穹之下，正道初兴。', source: 'human',
+      wordCount: 10, createdAt: 't', note: '',
+    };
+    const block = buildBookContextBlock({ bundle: b, bookId: 'bk1', currentIndex: 2 });
+    expect(block).toContain('当前作品定位');
+    expect(block).toContain('主线');
+    expect(block).toContain('前文回顾');
+    expect(block).toContain('第一章');
+  });
+
+  it('buildBookContextBlock 在 bookId 无效时返回空串', () => {
+    const b = emptyBundle(mkWorld());
+    expect(buildBookContextBlock({ bundle: b, bookId: 'missing', currentIndex: 2 })).toBe('');
+  });
+
+  it('assembleAIRequest 在提供 bookId 时把作品上下文并入 contextBlock', () => {
+    const b = emptyBundle(mkWorld());
+    const book: Book = {
+      id: 'bk1', worldId: 'w', name: '主线', description: '正道崛起', order: 0,
+      createdAt: 't', updatedAt: 't',
+    };
+    b.books['bk1'] = book;
+    b.chapters['c1'] = {
+      id: 'c1', worldId: 'w', bookId: 'bk1', index: 1, title: '第一章', outline: '起',
+      currentVersionId: 'v1', status: 'draft', createdAt: 't', updatedAt: 't',
+    };
+    b.chapterVersions['v1'] = {
+      id: 'v1', chapterId: 'c1', content: '苍穹之下，正道初兴。', source: 'human',
+      wordCount: 10, createdAt: 't', note: '',
+    };
+    const req = assembleAIRequest({
+      bundle: b, style: baseStyle, index: 2, targetWords: 1500,
+      bookId: 'bk1', outline: '聚焦主角抉择',
+    });
+    expect(req.contextBlock).toContain('当前作品定位');
+    expect(req.contextBlock).toContain('前文回顾');
+    expect(req.operationBlock).toContain('本章创作意图');
+    expect(req.operationBlock).toContain('聚焦主角抉择');
+  });
+
+  it('assembleAIRequest 未提供 outline 时不出现作者意图段', () => {
+    const b = emptyBundle(mkWorld());
+    const req = assembleAIRequest({ bundle: b, style: baseStyle, index: 1, targetWords: 800 });
+    expect(req.operationBlock).not.toContain('本章创作意图');
   });
 });

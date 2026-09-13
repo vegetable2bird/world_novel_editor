@@ -101,6 +101,17 @@ classDiagram
         +string id
         +enum status
     }
+    class PlotBranch {
+        +string id
+        +string title
+        +string outline
+        +string rationale
+        +PlotSeed seed
+        +number suggestedIndex
+    }
+    class PlotSuggestionEngine {
+        +PlotBranch[] suggestPlotBranches(bundle, bookId, opts)
+    }
 
     World "1" *-- "0..*" WorldEntity : 拥有
     World "1" *-- "0..*" EntityRelation : 拥有
@@ -120,3 +131,6 @@ classDiagram
     AIGenerationRecord *-- AIResponse : 响应
     ChapterVersion "0..1" --> AIGenerationRecord : 来源
     TimelineEvent "0..*" --> Chapter : 关联章节
+    PlotSuggestionEngine "1" ..> "0..*" PlotBranch : 产出
+    PlotSuggestionEngine "1" ..> WorldBundle : 读取
+    PlotBranch "0..*" ..> Book : 建议落点

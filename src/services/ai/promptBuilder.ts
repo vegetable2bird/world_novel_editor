@@ -2,8 +2,10 @@ import type { AIRequest } from '../../types/ai';
 import type { OperationResult } from '../../types/console';
 import type { StyleConfig } from '../../types/style';
 import type { WorldBundle } from '../../store/types';
+import type { Book } from '../../types/book';
 import { assembleContext } from './contextAssembler';
 import { buildSystemPrompt } from '../../utils/promptTemplates';
+import { truncateToWords } from '../../utils/text';
 
 /**
  * 三段式 Prompt 组装器（架构文档 7.3 节）。
@@ -71,16 +73,89 @@ export interface AssembleRequestInput {
   index: number;
   targetWords: number;
   chapterId?: string;
+  /** 目标作品（卷）id；提供后将并入"作品定位 + 前文回顾"上下文 */
+  bookId?: string;
+  /** 本章创作意图 / 大纲；提供后将作为"作者意图"并入操作推演段 */
+  outline?: string;
 }
 
-/** 组装完整 AIRequest（三段式 + 系统提示）。 */
+/**
+ * 段1补充：作品定位 + 同作品原文回顾。
+ * 让生成的章节"懂"自己属于哪部作品、之前写过什么，从而在同一作品内保持连贯。
+ */
+export function buildBookContextBlock(input: {
+  bundle: WorldBundle;
+  bookId?: string;
+  /** 当前章节序号，用于回顾序号更小的前文 */
+  currentIndex?: number;
+  maxWords?: number;
+}): string {
+  const { bundle, bookId, currentIndex, maxWords = 1000 } = input;
+  const book: Book | undefined = bookId ? bundle.books[bookId] : undefined;
+  const sections: string[] = [];
+
+  if (book) {
+    const chaptersInBook = Object.values(bundle.chapters)
+      .filter((c) => c.bookId === book.id)
+      .sort((a, b) => a.index - b.index);
+    const lines: string[] = [];
+    lines.push(`- 作品名：${book.name}`);
+    if (book.description) lines.push(`- 作品概要：${book.description}`);
+    lines.push(`- 卷序：第 ${book.order + 1} 部`);
+    lines.push(
+      `- 已撰写章节：${chaptersInBook.length} 章（本章将落点为第 ${currentIndex ?? chaptersInBook.length + 1} 章）`,
+    );
+    sections.push('## 当前作品定位\n' + lines.join('\n'));
+
+    // 前文回顾：同作品、序号更小的最近若干章
+    if (currentIndex != null) {
+      const prev = chaptersInBook
+        .filter((c) => c.index < currentIndex)
+        .sort((a, b) => a.index - b.index)
+        .slice(-5);
+      if (prev.length > 0) {
+        const recap = prev
+          .map((c) => {
+            const ver = bundle.chapterVersions[c.currentVersionId];
+            const head = ver
+              ? truncateToWords(
+                  ver.content.replace(/[#>*`\-]/g, '').replace(/\s+/g, ' ').trim(),
+                  50,
+                )
+              : '';
+            return `- 第${c.index}章《${c.title}》${
+              c.outline ? `｜大纲：${c.outline}` : ''
+            }${head ? `｜前文：${head}…` : ''}`;
+          })
+          .join('\n');
+        sections.push(`## 前文回顾（同作品最近 ${prev.length} 章）\n${recap}`);
+      }
+    }
+  }
+
+  return sections.length ? truncateToWords(sections.join('\n\n'), maxWords) : '';
+}
+
+/** 组装完整 AIRequest（三段式 + 系统提示，融入作品感知上下文）。 */
 export function assembleAIRequest(input: AssembleRequestInput): AIRequest {
-  const { bundle, style, index, targetWords, chapterId } = input;
-  const contextBlock = assembleContext(bundle);
-  const operationBlock = buildOperationBlock(
+  const { bundle, style, index, targetWords, chapterId, bookId, outline } = input;
+
+  // 段1：世界观上下文 + 作品定位/前文回顾。提供 bookId 时压缩世界上下文预算以腾出空间。
+  const worldContext = assembleContext(bundle, {
+    maxWords: bookId ? 1800 : 2500,
+  });
+  const bookContext = buildBookContextBlock({ bundle, bookId, currentIndex: index });
+  const contextBlock = [worldContext, bookContext].filter(Boolean).join('\n\n');
+
+  // 段2：操作推演 + 作者意图（大纲）
+  let operationBlock = buildOperationBlock(
     bundle.lastOperationResult,
     bundle.selectedDirectionId,
   );
+  if (outline && outline.trim()) {
+    operationBlock += `\n\n【本章创作意图／大纲】\n${outline.trim()}`;
+  }
+
   const styleBlock = buildStyleBlock(style, style?.requiredForeshadows ?? []);
   const systemPrompt = buildSystemPrompt(style?.tone ?? '史诗奇幻', index, targetWords);
 

@@ -278,11 +278,14 @@ interface AIProviderConfig {
 }
 interface AIRequest {
   worldId: string; chapterId?: string;
-  contextBlock: string;               // 段1 世界观上下文
-  operationBlock: string;             // 段2 操作推演摘要
+  contextBlock: string;               // 段1 世界观上下文（v2 P2 起并入"作品定位+前文回顾"）
+  operationBlock: string;             // 段2 操作推演摘要（v2 P2 起可并入"作者意图/大纲"）
   styleBlock: string;                 // 段3 风格参数
   systemPrompt?: string;
 }
+// 注：assembleAIRequest 额外接受 bookId / outline 入参，
+// 分别并入 contextBlock（作品定位+同作品前文回顾）与 operationBlock（创作意图），
+// 不破坏三段式后端契约。
 interface AIResponse {
   content: string; provider: string; model: string;
   usage?: { promptTokens: number; completionTokens: number };
@@ -292,7 +295,22 @@ interface AIGenerationRecord {
   request: AIRequest; response: AIResponse;
   status: 'pending' | 'success' | 'failed'; createdAt: string;
 }
-```
+
+// types/ai.ts · GenerateChapterOptions（v2 P2 增强）
+interface GenerateChapterOptions {
+  chapterId?: string; providerHint?: AIProviderName; targetWords?: number;
+  bookId?: string;   // 目标作品（卷），缺省取当前激活作品
+  outline?: string;  // 创作意图/大纲，并入生成提示
+}
+
+// services/narrative/plotSuggestion.ts（v2 P2 新增：叙事推演引擎 Plot Suggestion Engine）
+type PlotSeed = 'direction' | 'foreshadow' | 'event' | 'variable' | 'progress';
+interface PlotBranch {
+  id: string; title: string; outline: string; rationale: string;
+  seed: PlotSeed; suggestedIndex: number;
+}
+// suggestPlotBranches(bundle, bookId?, { count })：基于世界状态+作品进度+伏笔/事件/走向/变量，
+// 确定性产出叙事分支建议（不额外调 LLM，沿用 O7 规则推演原则）。
 
 ### 3.2 类图（Mermaid）
 
@@ -572,9 +590,11 @@ export const WorldEntitySchema = z.object({
 
 [第一部分·世界观上下文 / Lorebook]   ← contextAssembler 产出(contextBlock)
   { 相关实体摘要 + 关系 + 活跃伏笔 + 时间线定位 }
+  [v2 P2 起并入] 当前作品定位 + 同作品前文回顾（buildBookContextBlock）
 
 [第二部分·操作与叙事推演]           ← 来自 OperationResult(operationBlock)
   { 本次操作摘要 + 触发事件 + 变量变化 + 作者选定走向 }
+  [v2 P2 起可并入] 本章创作意图/大纲（来自 GenerateChapterOptions.outline）
 
 [第三部分·描写风格]                 ← 来自 StyleConfig(styleBlock)
   { 文风 / 视角 / 节奏 / 修辞 / 禁用写法 / 必须回收伏笔 }
@@ -582,6 +602,8 @@ export const WorldEntitySchema = z.object({
 [约束] 首尾不解释、不输出元说明；严格回收 requiredForeshadows。
 ```
 - `contextAssembler` 相关性打分：`inContext` 权重最高 → 章节相关实体 → 活跃伏笔 → 近期事件；超 token 预算时按得分截断（P1 升级为本地向量检索）。
+- `buildBookContextBlock`（v2 P2）：提供 `bookId` 时，在段1追加「当前作品定位」（作品名/概要/卷序/已写章节数）与「同作品前文回顾」（序号更小的最近 5 章标题+大纲+前文摘要），让生成在所属作品内保持连贯；世界上下文预算相应压缩（bookId 存在时 1800，否则 2500）。
+- 叙事推演引擎 `suggestPlotBranches`（v2 P2，`services/narrative/plotSuggestion.ts`）：基于世界状态+作品进度+伏笔/事件/操作走向/变量趋势确定性产出叙事分支建议，在操作台"情节推演"页供作者一键采纳生成或仅存大纲（详见第九节）。
 
 ### 7.4 风格参数 Schema（`src/schemas/styleSchema.ts`）
 ```ts
@@ -619,7 +641,7 @@ export const StyleConfigSchema = z.object({
 
 ## 九、给工程师（寇豆码）的落地下注
 
-- **先打通 T01→T02→T03→T04→T05 最小闭环**，不要提前做 P2（地图/社区/协作）。
+- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成，P2 内容生成增强进行中：作品感知上下文 + 叙事推演引擎）。
 - **状态唯一真相**：所有视图经 `useWorkStore` 读写，禁止组件内私藏世界状态。
 - **密钥红线**：前端只调 `/api/ai/generate`，任何 API Key 只在 `server/.env`，绝不进 `src/` 或前端 bundle。
 - **三段式 prompt** 严格按 `promptTemplates.ts` 组装，`contextAssembler` 负责截断，避免超 token。
