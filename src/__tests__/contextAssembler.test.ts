@@ -89,4 +89,24 @@ describe('contextAssembler', () => {
     const ctx = assembleContext(b);
     expect(ctx).not.toContain('本卷出场角色');
   });
+
+  it('跨书出演角色附注其出演的其他作品（卷）名', () => {
+    const b = emptyBundle(mkWorld());
+    b.books['bk'] = { id: 'bk', worldId: 'w', name: '主线', description: '', order: 0, createdAt: 't', updatedAt: 't' };
+    b.books['bk2'] = { id: 'bk2', worldId: 'w', name: '外传', description: '', order: 1, createdAt: 't', updatedAt: 't' };
+    // 本卷角色
+    b.characterInstances['ci1'] = {
+      id: 'ci1', worldId: 'w', bookId: 'bk', registryId: 'reg1', name: '叶凡', portrait: {}, status: 'active',
+      createdAt: 't', updatedAt: 't',
+    };
+    // 同一总库角色在另一卷出演（非本卷）
+    b.characterInstances['ci2'] = {
+      id: 'ci2', worldId: 'w', bookId: 'bk2', registryId: 'reg1', name: '叶凡', portrait: {}, status: 'minor',
+      createdAt: 't', updatedAt: 't',
+    };
+    const ctx = assembleContext(b, { bookId: 'bk' });
+    expect(ctx).toContain('跨书出演');
+    expect(ctx).toContain('外传');
+    expect(ctx).not.toContain('配角'); // 另一卷的状态不应混进本卷 cast 行
+  });
 });

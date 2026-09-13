@@ -132,6 +132,32 @@ classDiagram
     class PlotSuggestionEngine {
         +PlotBranch[] suggestPlotBranches(bundle, bookId, opts)
     }
+    class CrossBookConflict {
+        +string id
+        +CrossBookConflictType type
+        +ConflictSeverity severity
+        +string subjectKey
+        +string subjectLabel
+        +ConflictOccurrence[] occurrences
+        +string hint
+    }
+    class CharacterContinuityRow {
+        +string registryId
+        +string name
+        +CharacterBookAppearance[] appearances
+        +boolean conflicted
+    }
+    class CrossBookReport {
+        +CrossBookConflict[] conflicts
+        +CharacterContinuityRow[] rows
+        +number bookCount
+        +number crossBookCharacterCount
+    }
+    class ContinuityEngine {
+        +CrossBookConflict[] detectCrossBookConflicts(bundle)
+        +CharacterContinuityRow[] buildCharacterContinuity(bundle)
+        +CrossBookReport buildCrossBookReport(bundle)
+    }
 
     World "1" *-- "0..*" WorldEntity : 拥有
     World "1" *-- "0..*" EntityRelation : 拥有
@@ -158,3 +184,9 @@ classDiagram
     PlotSuggestionEngine "1" ..> "0..*" PlotBranch : 产出
     PlotSuggestionEngine "1" ..> WorldBundle : 读取
     PlotBranch "0..*" ..> Book : 建议落点
+    ContinuityEngine "1" ..> WorldBundle : 读取
+    ContinuityEngine "1" ..> "0..*" CrossBookConflict : 检测
+    ContinuityEngine "1" ..> "0..*" CharacterContinuityRow : 聚合
+    CrossBookReport "1" *-- "0..*" CrossBookConflict : 汇总
+    CrossBookReport "1" *-- "0..*" CharacterContinuityRow : 汇总
+    CharacterContinuityRow "0..*" ..> CharacterInstance : 跨书聚合

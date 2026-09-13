@@ -37,6 +37,8 @@ import {
   useCurrentBook,
 } from '../hooks/useWorldState';
 import type { CharacterInstance } from '../types/character';
+import CrossBookPanel from '../components/crossBook/CrossBookPanel';
+import { buildCrossBookReport } from '../services/crossBook/continuity';
 
 const STATUS_LABELS: Record<CharacterInstance['status'], string> = {
   active: '登场',
@@ -44,7 +46,7 @@ const STATUS_LABELS: Record<CharacterInstance['status'], string> = {
   offstage: '暂离场',
 };
 
-type TabKey = 'registry' | 'instances' | 'mood';
+type TabKey = 'registry' | 'instances' | 'mood' | 'crossbook';
 
 /** 角色系统页面：三标签分别承载角色总库 / 本卷角色卡 / 心情时间线。 */
 export default function CharacterPage(): JSX.Element {
@@ -112,6 +114,35 @@ export default function CharacterPage(): JSX.Element {
     }
     return m;
   }, [world.moodEntries]);
+
+  // 跨书联动报告（冲突检测 + 联动矩阵）
+  const crossBookReport = useMemo(() => buildCrossBookReport(world), [world]);
+
+  // 联动提醒：本卷某角色卡若在其他卷也有出演，列出其它卷名，提示作者跨书一致
+  const crossBookByInstance = useMemo(() => {
+    const m = new Map<string, string[]>();
+    const booksByReg = new Map<string, Set<string>>();
+    for (const c of instances) {
+      if (!c.registryId) continue;
+      const s = booksByReg.get(c.registryId) ?? new Set<string>();
+      s.add(c.bookId);
+      booksByReg.set(c.registryId, s);
+    }
+    const bookNames = new Map(Object.entries(world.books).map(([id, b]) => [id, b.name]));
+    for (const c of bookInstances) {
+      if (!c.registryId) continue;
+      const others = [...(booksByReg.get(c.registryId) ?? [])].filter(
+        (bid) => bid !== c.bookId,
+      );
+      if (others.length > 0) {
+        m.set(
+          c.id,
+          others.map((bid) => bookNames.get(bid) ?? bid),
+        );
+      }
+    }
+    return m;
+  }, [instances, bookInstances, world.books]);
 
   // 本卷心情时间线（含角色名）
   const moodTimeline = Object.values(world.moodEntries)
@@ -251,6 +282,10 @@ export default function CharacterPage(): JSX.Element {
         <Tab label={`角色总库(${registry.length})`} value="registry" />
         <Tab label={`本卷角色卡(${bookInstances.length})`} value="instances" />
         <Tab label={`心情时间线(${moodTimeline.length})`} value="mood" />
+        <Tab
+          label={`跨书联动(${crossBookReport.conflicts.length})`}
+          value="crossbook"
+        />
       </Tabs>
 
       {tab === 'registry' && (
@@ -367,6 +402,16 @@ export default function CharacterPage(): JSX.Element {
                         <span>
                           {c.currentMood ? `当前心情：${c.currentMood} ｜ ` : ''}
                           {c.portrait?.['要点'] as string}
+                          {crossBookByInstance.get(c.id) && (
+                            <Alert
+                              severity="info"
+                              sx={{ mt: 0.5, py: 0 }}
+                              variant="outlined"
+                            >
+                              联动提醒：该角色还出演于 {crossBookByInstance.get(c.id)!.join('、')}，
+                              修改请注意跨书一致。
+                            </Alert>
+                          )}
                         </span>
                       }
                     />
@@ -426,6 +471,16 @@ export default function CharacterPage(): JSX.Element {
             </List>
           )}
         </Box>
+      )}
+
+      {tab === 'crossbook' && (
+        <CrossBookPanel
+          bundle={world}
+          onLocate={(bid) => {
+            store.setCurrentBook(worldId, bid);
+            setTab('instances');
+          }}
+        />
       )}
 
       {/* 总库编辑弹窗 */}

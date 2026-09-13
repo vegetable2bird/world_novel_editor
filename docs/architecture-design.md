@@ -149,6 +149,7 @@ world_novel_editor/
 │   │   ├── ConsolePage.tsx
 │   │   ├── ChapterListPage.tsx
 │   │   ├── EditorPage.tsx
+│   │   ├── CharacterPage.tsx          # 角色系统：四标签（总库/本卷角色卡/心情/跨书联动）
 │   │   └── SettingsPage.tsx
 │   ├── hooks/
 │   │   ├── useGeneration.ts
@@ -663,7 +664,7 @@ export const StyleConfigSchema = z.object({
 
 ## 九、给工程师（寇豆码）的落地下注
 
-- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成；P2 内容生成增强已完成：作品感知上下文 + 叙事推演引擎；P3 角色系统已完成：角色总库 + 角色卡 + 心情时间线）。
+- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成；P2 内容生成增强已完成：作品感知上下文 + 叙事推演引擎；P3 角色系统已完成：角色总库 + 角色卡 + 心情时间线；P4 书籍与跨书联动已完成：跨书角色聚合矩阵 + 冲突检测 + 联动提醒 + 生成上下文跨书附注）。
 - **状态唯一真相**：所有视图经 `useWorkStore` 读写，禁止组件内私藏世界状态。
 - **密钥红线**：前端只调 `/api/ai/generate`，任何 API Key 只在 `server/.env`，绝不进 `src/` 或前端 bundle。
 - **三段式 prompt** 严格按 `promptTemplates.ts` 组装，`contextAssembler` 负责截断，避免超 token。

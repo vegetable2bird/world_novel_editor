@@ -126,13 +126,29 @@ export function buildCastSection(
   );
   if (cast.length === 0) return null;
 
+  // 预计算跨书出演：registryId -> 除本卷外的出演卷名集合（用于联动附注）
+  const bookNames = new Map(Object.entries(bundle.books).map(([id, b]) => [id, b.name]));
+  const crossBooksByRegistry = new Map<string, Set<string>>();
+  for (const c of Object.values(bundle.characterInstances)) {
+    if (!c.registryId || c.bookId === bookId) continue;
+    const s = crossBooksByRegistry.get(c.registryId) ?? new Set<string>();
+    s.add(bookNames.get(c.bookId) ?? c.bookId);
+    crossBooksByRegistry.set(c.registryId, s);
+  }
+
   const lines = cast.map((c) => {
     const portrait = Object.entries(c.portrait ?? {})
       .filter(([, v]) => v !== '' && v != null)
       .map(([k, v]) => `${k}: ${v}`)
       .join('；');
     const mood = c.currentMood ? `｜当前心情：${c.currentMood}` : '';
-    return `- ${c.name}（${c.status}）${portrait ? `｜${portrait}` : ''}${mood}`;
+    // 跨书出演附注：提醒 AI 该角色还在其他卷出场，需保持人物跨书一致
+    let cross = '';
+    const others = c.registryId ? crossBooksByRegistry.get(c.registryId) : undefined;
+    if (others && others.size > 0) {
+      cross = `｜跨书出演：${[...others].join('、')}`;
+    }
+    return `- ${c.name}（${c.status}）${portrait ? `｜${portrait}` : ''}${mood}${cross}`;
   });
   return `## 本卷出场角色\n${lines.join('\n')}`;
 }
