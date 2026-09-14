@@ -158,6 +158,21 @@ classDiagram
         +CharacterContinuityRow[] buildCharacterContinuity(bundle)
         +CrossBookReport buildCrossBookReport(bundle)
     }
+    class WorldTemplate {
+        +string key
+        +string name
+        +string bookName
+        +Variable[] variables
+        +StyleConfig style
+        +SeedEntityDef[] seedEntities
+    }
+    class WorldIo {
+        +string serializeWorld(bundle)
+        +WorldBundle parseWorld(json)
+        +void exportWorldToFile(worldId)
+        +string importWorldBundle(json)
+        -WorldBundle remapBundleIds(bundle)
+    }
 
     World "1" *-- "0..*" WorldEntity : 拥有
     World "1" *-- "0..*" EntityRelation : 拥有
@@ -190,3 +205,5 @@ classDiagram
     CrossBookReport "1" *-- "0..*" CrossBookConflict : 汇总
     CrossBookReport "1" *-- "0..*" CharacterContinuityRow : 汇总
     CharacterContinuityRow "0..*" ..> CharacterInstance : 跨书聚合
+    WorldIo "1" ..> WorldBundle : 序列化/双遍重映射导入
+    WorldTemplate "1" ..> WorldBundle : createWorld 应用开局预设

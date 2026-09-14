@@ -110,7 +110,7 @@ export interface WorkState {
 // 各 slice 接口在对应 slice 文件中定义，这里仅做前向类型声明以避免循环依赖问题。
 // 实际 WorkStore 类型在 workStore.ts 中由 5 个 slice 组合而成。
 export interface WorldSlice {
-  createWorld: (name: string, description?: string) => string;
+  createWorld: (name: string, description?: string, templateKey?: string) => string;
   updateWorldMeta: (
     worldId: string,
     patch: Partial<Pick<World, 'name' | 'description'>>,

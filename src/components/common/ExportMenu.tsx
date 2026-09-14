@@ -3,21 +3,10 @@ import { Button, Menu, MenuItem } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useWorkStore } from '../../store/workStore';
 import { useCurrentWorldId } from '../../hooks/useWorldState';
+import { downloadText } from '../../utils/file';
 
 interface Props {
   chapterId: string;
-}
-
-function triggerDownload(filename: string, content: string, mime: string): void {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -39,11 +28,11 @@ export default function ExportMenu({ chapterId }: Props): JSX.Element {
   const content = version?.content ?? '';
 
   const exportMd = () => {
-    triggerDownload(`${base}.md`, content, 'text/markdown;charset=utf-8');
+    downloadText(`${base}.md`, content, 'text/markdown;charset=utf-8');
     setAnchor(null);
   };
   const exportTxt = () => {
-    triggerDownload(`${base}.txt`, content, 'text/plain;charset=utf-8');
+    downloadText(`${base}.txt`, content, 'text/plain;charset=utf-8');
     setAnchor(null);
   };
 

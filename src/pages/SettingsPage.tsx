@@ -1,6 +1,7 @@
 import { Box, Typography, Paper, Alert, Divider, Link } from '@mui/material';
 import StyleConfigPanel from '../components/generation/StyleConfigPanel';
 import AIModelConfigPanel from '../components/settings/AIModelConfigPanel';
+import WorldIoMenu from '../components/common/WorldIoMenu';
 import { useCurrentWorldId } from '../hooks/useWorldState';
 
 /**
@@ -39,6 +40,16 @@ export default function SettingsPage(): JSX.Element {
           后端启动：<code>cd server &amp;&amp; npm install &amp;&amp; npm run dev</code>
           （默认端口 8787，前端 Vite 已代理 <code>/api</code>）。
         </Typography>
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
+        <Typography variant="subtitle1">数据导入 / 导出</Typography>
+        <Divider sx={{ my: 1 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          把整个世界（设定 / 章节 / 角色 / 时间线）导出为单个 JSON 文件，可作为备份或分享给他人；
+          导入会以<b>全新 id</b> 落库为一个独立世界副本，不会覆盖现有世界。这是「世界模板分发 / 备份还原」的基础。
+        </Typography>
+        <WorldIoMenu />
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>

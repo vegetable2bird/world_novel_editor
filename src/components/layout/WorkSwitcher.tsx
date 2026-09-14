@@ -15,6 +15,10 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useWorkStore } from '../../store/workStore';
+import {
+  WORLD_TEMPLATES,
+  DEFAULT_TEMPLATE_KEY,
+} from '../../constants/worldTemplates';
 
 /**
  * 世界切换器：下拉切换当前世界，并提供"新建世界"入口。
@@ -26,13 +30,15 @@ export default function WorkSwitcher(): JSX.Element {
   const createWorld = useWorkStore((s) => s.createWorld);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [tpl, setTpl] = useState(DEFAULT_TEMPLATE_KEY);
 
   const worldList = Object.values(worlds);
 
   const handleCreate = () => {
     const finalName = name.trim() || '未命名世界';
-    createWorld(finalName);
+    createWorld(finalName, undefined, tpl);
     setName('');
+    setTpl(DEFAULT_TEMPLATE_KEY);
     setOpen(false);
   };
 
@@ -89,6 +95,23 @@ export default function WorkSwitcher(): JSX.Element {
               if (e.key === 'Enter') handleCreate();
             }}
           />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>世界模板</InputLabel>
+            <Select
+              value={tpl}
+              label="世界模板"
+              onChange={(e) => setTpl(e.target.value)}
+            >
+              {Object.values(WORLD_TEMPLATES).map((t) => (
+                <MenuItem key={t.key} value={t.key}>
+                  {t.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Typography variant="caption" color="text.secondary">
+            {WORLD_TEMPLATES[tpl]?.description}
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>取消</Button>

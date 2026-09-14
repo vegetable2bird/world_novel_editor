@@ -16,6 +16,7 @@ import {
   DEFAULT_VARIABLES,
   defaultFieldsFor,
   defaultSummaryFor,
+  WORLD_TEMPLATES,
 } from '../constants/worldTemplates';
 
 /**
@@ -23,7 +24,7 @@ import {
  * 全部以 worldId 为键收纳于 WorldBundle。
  */
 export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (set, get) => ({
-  createWorld: (name: string, description?: string): string => {
+  createWorld: (name: string, description?: string, templateKey?: string): string => {
     const id = newId('world');
     const ts = nowISO();
     const world: World = {
@@ -37,8 +38,12 @@ export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (se
     // 构造空 bundle 并预置默认变量与全局风格配置，使操作台/生成开箱即用。
     const bundle: WorldBundle = emptyBundle(world);
 
-    // 默认变量
-    for (const v of DEFAULT_VARIABLES) {
+    // 套用世界模板（v2 P5）：变量/风格/默认作品名/预置实体；无模板时回退默认。
+    const tpl = templateKey ? WORLD_TEMPLATES[templateKey] : undefined;
+    const variables = tpl ? tpl.variables : DEFAULT_VARIABLES;
+
+    // 预置变量
+    for (const v of variables) {
       const vid = newId('var');
       const variable: Variable = {
         id: vid,
@@ -51,16 +56,16 @@ export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (se
       };
       bundle.variables[vid] = variable;
     }
-    // 默认全局风格配置
+    // 全局风格配置
     const sid = newId('style');
     const style: StyleConfig = {
       id: sid,
       worldId: id,
       scope: 'global',
-      tone: '史诗奇幻',
-      pov: '第三人称限知',
-      pacing: '张弛有度',
-      rhetoric: '重白描、少堆砌比喻',
+      tone: tpl?.style.tone ?? '史诗奇幻',
+      pov: tpl?.style.pov ?? '第三人称限知',
+      pacing: tpl?.style.pacing ?? '张弛有度',
+      rhetoric: tpl?.style.rhetoric ?? '重白描、少堆砌比喻',
       forbiddenWritings: [],
       requiredForeshadows: [],
       extra: {},
@@ -72,13 +77,35 @@ export const createWorldSlice: StateCreator<WorkStore, [], [], WorldSlice> = (se
     const book: Book = {
       id: bookId,
       worldId: id,
-      name: '主线',
-      description: '默认作品（卷），可重命名或新增其他作品。',
+      name: tpl?.bookName ?? '主线',
+      description: tpl
+        ? `由「${tpl.name}」模板创建的作品（卷）。`
+        : '默认作品（卷），可重命名或新增其他作品。',
       order: 0,
       createdAt: ts,
       updatedAt: ts,
     };
     bundle.books[bookId] = book;
+
+    // 模板预置实体（开局即有可写的基础设定）
+    if (tpl) {
+      for (const se of tpl.seedEntities) {
+        const eid = newId('ent');
+        bundle.entities[eid] = {
+          id: eid,
+          worldId: id,
+          type: se.type,
+          name: se.name,
+          summary: se.summary ?? defaultSummaryFor(se.type),
+          fields: se.fields ?? defaultFieldsFor(se.type),
+          richText: undefined,
+          tags: [],
+          inContext: true,
+          createdAt: ts,
+          updatedAt: ts,
+        };
+      }
+    }
 
     set((state) => ({
       worlds: { ...state.worlds, [id]: bundle },

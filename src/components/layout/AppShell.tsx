@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { NavRail, MobileNav } from './NavRail';
 import WorkSwitcher from './WorkSwitcher';
+import WorldIoMenu from '../common/WorldIoMenu';
 import { useAutosave } from '../../hooks/useAutosave';
 
 /**
@@ -30,6 +31,7 @@ export default function AppShell(): JSX.Element {
               世界小说编辑器
             </Typography>
             <Box sx={{ flex: 1 }} />
+            <WorldIoMenu />
             <WorkSwitcher />
           </Toolbar>
         </AppBar>

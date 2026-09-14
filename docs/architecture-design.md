@@ -113,6 +113,9 @@ world_novel_editor/
 │   │   │   └── index.ts
 │   │   ├── narrative/
 │   │   │   └── narrativeEngine.ts    # 基于世界状态+操作的轻量推演
+│   │   ├── crossBook/
+│   │   │   └── continuity.ts        # 跨书联动引擎（v2 P4）
+│   │   ├── worldIo.ts               # 世界导入/导出（v2 P5：序列化+双遍 id 重映射）
 │   │   └── sync/
 │   │       └── syncService.ts        # 云同步接口（P1 实现，v1 留桩）
 │   ├── components/
@@ -143,7 +146,8 @@ world_novel_editor/
 │   │   │   └── NavRail.tsx
 │   │   └── common/
 │   │       ├── ConfirmDialog.tsx
-│   │       └── ExportMenu.tsx         # 导出 TXT/Markdown
+│   │       ├── ExportMenu.tsx         # 导出 TXT/Markdown
+│   │       └── WorldIoMenu.tsx        # 世界级导入/导出（v2 P5）
 │   ├── pages/
 │   │   ├── WorldPage.tsx
 │   │   ├── ConsolePage.tsx
@@ -158,9 +162,10 @@ world_novel_editor/
 │   ├── utils/
 │   │   ├── id.ts                     # nanoid 封装
 │   │   ├── text.ts                   # 字数统计/截断
+│   │   ├── file.ts                   # 浏览器端文件下载（downloadText）
 │   │   └── promptTemplates.ts        # 三段式 prompt 模板常量
 │   └── constants/
-│       └── worldTemplates.ts         # 实体类型默认模板
+│       └── worldTemplates.ts         # 实体类型默认模板 + 世界模板库（v2 P5）
 ├── server/                           # 后端轻代理（持有密钥，P0 最小实现）
 │   ├── index.ts                      # Express 入口
 │   ├── aiProxy.ts                    # POST /api/ai/generate
@@ -664,7 +669,7 @@ export const StyleConfigSchema = z.object({
 
 ## 九、给工程师（寇豆码）的落地下注
 
-- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成；P2 内容生成增强已完成：作品感知上下文 + 叙事推演引擎；P3 角色系统已完成：角色总库 + 角色卡 + 心情时间线；P4 书籍与跨书联动已完成：跨书角色聚合矩阵 + 冲突检测 + 联动提醒 + 生成上下文跨书附注）。
+- **先打通 T01→T02→T03→T04→T05 最小闭环**，再推进 v2 增量（P1+ Book 实体重构已完成；P2 内容生成增强已完成：作品感知上下文 + 叙事推演引擎；P3 角色系统已完成：角色总库 + 角色卡 + 心情时间线；P4 书籍与跨书联动已完成：跨书角色聚合矩阵 + 冲突检测 + 联动提醒 + 生成上下文跨书附注；P5 模板与商业已完成：世界模板库（四套开局预设）+ 世界导入/导出（世界级 JSON 序列化 / 双遍 id 重映射导入，支持备份与分享））。
 - **状态唯一真相**：所有视图经 `useWorkStore` 读写，禁止组件内私藏世界状态。
 - **密钥红线**：前端只调 `/api/ai/generate`，任何 API Key 只在 `server/.env`，绝不进 `src/` 或前端 bundle。
 - **三段式 prompt** 严格按 `promptTemplates.ts` 组装，`contextAssembler` 负责截断，避免超 token。
