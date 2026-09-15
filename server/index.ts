@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import 'dotenv/config';
 import { handleGenerate } from './aiProxy';
 import { getConfigView, saveAIConfigPayload } from './aiConfig';
@@ -40,6 +41,15 @@ app.post('/api/settings/ai', (req, res) => {
 });
 
 app.post('/api/ai/generate', handleGenerate);
+
+// 生产模式：托管前端静态资源（dist）并做 SPA 回退；/api 仍由上方路由处理。
+const DIST = process.env.DIST_DIR || path.resolve(process.cwd(), 'dist');
+app.use(express.static(DIST));
+app.get(/^(?!\/api\/).*/, (_req, res) => {
+  res.sendFile(path.join(DIST, 'index.html'), (err) => {
+    if (err) res.status(404).send('Not found');
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`[server] AI 代理已启动：http://localhost:${PORT}`);
