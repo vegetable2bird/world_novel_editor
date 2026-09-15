@@ -432,11 +432,11 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
       <section class="view active" id="dashboard">
         <div class="eyebrow">工作台 · Dashboard</div>
         <h1 class="title serif">欢迎回来，林墨</h1>
-        <p class="lede">你正在构建 3 个世界、创作 7 部作品。下面是今天的进度与入口。（角色会在你的作品中参演，但角色的动态属于角色库内部）</p>
+        <p class="lede">下面是今天的进度与入口。（角色会在你的作品中参演，但角色的动态属于角色库内部）</p>
         <div class="grid g3" style="margin-bottom:22px">
-          <div class="card stat"><span class="n">3</span><span class="l">我的世界</span></div>
-          <div class="card stat"><span class="n">7</span><span class="l">我的作品（创作中）</span></div>
-          <div class="card stat"><span class="n" id="dashCharN">4</span><span class="l">角色库活体角色</span></div>
+          <div class="card stat"><span class="n" id="dashWorldN">0</span><span class="l">我的世界</span></div>
+          <div class="card stat"><span class="n" id="dashBookN">0</span><span class="l">我的作品（创作中）</span></div>
+          <div class="card stat"><span class="n" id="dashCharN">0</span><span class="l">角色库活体角色</span></div>
         </div>
         <div class="quick" style="margin-bottom:20px">
           <div class="qbtn" id="newWorldDashBtn"><div class="qt">＋ 新建世界</div><div class="qd">空白起步，或套用模板</div></div>
@@ -458,11 +458,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
         </div>
 
         <h3 class="section-h">我的世界</h3>
-        <div class="grid g3">
-          <div class="world-card" data-world="霜与冠"><div class="wm serif">霜与冠</div><div class="wd">史诗西幻 · 双王权争夺，已搭好 40+ 实体与时间线</div><div class="meta"><span class="pill">西幻模板</span><span class="pill">12 章</span></div></div>
-          <div class="world-card" data-world="霓虹下行"><div class="wm serif">霓虹下行</div><div class="wd">现代都市 · 近未来赛博侦探，AI 生成占比高</div><div class="meta"><span class="pill">都市模板</span><span class="pill">6 章</span></div></div>
-          <div class="world-card" data-world="灰烬纪"><div class="wm serif">灰烬纪</div><div class="wd">科幻废土 · 文明重启，跨书联动《霜与冠》</div><div class="meta"><span class="pill">废土模板</span><span class="pill">3 章</span></div></div>
-        </div>
+        <div class="grid g3" id="dashWorlds"></div>
         <div class="card" style="margin-top:26px">
           <h3 class="section-h" style="margin-top:0">你的近期动态</h3>
           <div class="rel"><div class="av">世</div><div class="grow"><div style="font-weight:600">你创建了世界《霜与冠》</div><div class="rt">作者动作 · 3 天前</div></div></div>
@@ -562,7 +558,8 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
       <section class="view" id="editor">
         <div class="eyebrow">写作 · Editor</div>
         <h1 class="title serif">写作</h1>
-        <p class="lede">《霜与冠》· 第 4 章（写作中）。左侧章节，中间正文，右侧 AI 辅助与节奏提示。写作与「角色 / 书籍」的关系在此自然交汇。</p>
+        <p class="lede" id="edLede">《霜与冠》· 第 4 章（写作中）。左侧章节，中间正文，右侧 AI 辅助与节奏提示。写作与「角色 / 书籍」的关系在此自然交汇。</p>
+        <div style="margin:10px 0 4px"><label class="f" style="display:inline-block;margin-right:8px">当前作品</label><select id="edBookSel" class="f" style="width:auto;display:inline-block"></select></div>
         <div class="ed-layout">
           <div class="ed-list">
             <div class="chapter" style="border-color:var(--accent)"><div class="ch-num">04</div><div class="grow"><div class="ch-t">未命名</div><div class="ch-d">写作中</div></div></div>
@@ -584,7 +581,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
           <div class="ed-side">
             <div class="card">
               <h3 class="section-h" style="margin-top:0">本章要素</h3>
-              <div class="kv-row"><span class="k">所属书籍</span><span>霜与冠（西幻）</span></div>
+              <div class="kv-row"><span class="k">所属书籍</span><span id="edBookKv">霜与冠（西幻）</span></div>
               <div class="kv-row"><span class="k">视角人物</span><span>沈听澜</span></div>
               <div class="kv-row"><span class="k">时间线锚点</span><span>纪元 21 年冬</span></div>
               <div class="kv-row"><span class="k">出场角色</span><span>沈听澜 / 顾长亭</span></div>
@@ -809,6 +806,14 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
 <script>
 (function(){
   var root=document.documentElement;
+  // 全局错误浮层：任何运行时报错直接显示在屏幕上，避免白屏无提示（便于评审与真机排查）
+  window.addEventListener('error', function(e){
+    var d=document.getElementById('errOverlay');
+    if(!d){ d=document.createElement('div'); d.id='errOverlay';
+      d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7f1d1d;color:#fff;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:10px 14px;white-space:pre-wrap;max-height:42vh;overflow:auto;box-shadow:0 -4px 16px rgba(0,0,0,.4)';
+      document.body.appendChild(d); }
+    d.textContent='⚠️ 运行时错误：'+(e.message||e.error)+(e.error&&e.error.stack?'\n'+(e.error.stack.split('\n').slice(0,3).join('\n')):'');
+  });
 
   /* ============ STATE ============ */
   var WORLDS=['霜与冠','霓虹下行','灰烬纪'];
@@ -922,6 +927,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
       b.classList.toggle('active', b.dataset.group===GROUPS[id] || b.dataset.go===id);
     });
     if(TITLES[id]){ document.getElementById('crumb').textContent=TITLES[id][0]; document.getElementById('topTitle').textContent=TITLES[id][1]; }
+    if(id==='editor'){ populateEdBookSel(); renderEdMood(); }
     document.body.classList.remove('nav-open');
     window.scrollTo(0,0);
   }
@@ -1006,6 +1012,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
         '<div class="char-top"><div class="char-av">'+avatarText(c.name)+'</div>'+
         '<div><div class="char-name">'+c.name+'</div><div class="char-meta">生于《'+c.world+'》· 总库 '+c.id.toUpperCase()+'</div></div></div>'+
         '<div class="char-tags"><span class="tag key">'+c.zodiac+'</span><span class="tag key">生肖'+c.sx+'</span><span class="tag">'+c.role+'</span></div>'+
+        (c.cast&&c.cast.length?'<div style="margin-top:8px;font-size:12px;color:var(--muted)">参演：'+c.cast.map(function(k){return '<span class="cast-chip" data-jumpbook="'+k.book+'" style="cursor:pointer;color:var(--accent)">《'+k.book+'》'+(k.role?' · '+k.role:'')+'</span>';}).join(' ')+'</div>':'')+
         '<div class="char-actions">'+
           '<button class="mini-btn" data-view="'+c.id+'">查看</button>'+
           '<button class="mini-btn" data-edit="'+c.id+'">编辑</button>'+
@@ -1241,8 +1248,11 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
     document.getElementById('wc').textContent='约 '+t.value.length+' 字';
   });
   function renderEdMood(){
-    // 取《霜与冠》出场角色：沈听澜、顾长亭
-    var ids=['c1','c4'];
+    var box=document.getElementById('edMoodCtx'); if(!box) return;
+    if(!currentBook){ box.innerHTML='<p style="color:var(--muted);font-size:13px">请先在上方选择一本书。</p>'; return; }
+    var ids=[]; (currentBook.cast||[]).forEach(function(e){ if(e.kind==='lib'&&e.charId) ids.push(e.charId); });
+    ids=ids.filter(function(v,i){return ids.indexOf(v)===i;});
+    if(!ids.length){ box.innerHTML='<p style="color:var(--muted);font-size:13px">本书暂无关联总库角色（可在「书籍管理 → 参演角色」关联）。</p>'; return; }
     var html='';
     ids.forEach(function(id){
       var c=state.characters.find(function(x){return x.id===id;}); if(!c) return;
@@ -1250,7 +1260,15 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
       html+='<div class="mood-ctx"><div class="mav">'+avatarText(c.name)+'</div>'+
         '<div class="mt"><b>'+c.name+'</b> · '+m.composite+'<div class="ms">'+(c.cast[0]?c.cast[0].role:'')+' · 能量 '+m.energy+'/100</div></div></div>';
     });
-    var box=document.getElementById('edMoodCtx'); if(box) box.innerHTML=html;
+    box.innerHTML=html;
+  }
+  function populateEdBookSel(){
+    var sel=document.getElementById('edBookSel'); if(!sel) return;
+    sel.innerHTML=state.books.map(function(b){return '<option value="'+b.id+'">《'+b.name+'》</option>';}).join('');
+    if(state.books.length && !currentBook) currentBook=state.books[0];
+    if(currentBook) sel.value=currentBook.id;
+    var kv=document.getElementById('edBookKv'); if(kv&&currentBook) kv.textContent=currentBook.name+'（'+currentBook.world+'）';
+    var lede=document.getElementById('edLede'); if(lede&&currentBook) lede.textContent='《'+currentBook.name+'》· 写作中。左侧章节，中间正文，右侧 AI 辅助与节奏提示。';
   }
 
   /* ============ ONBOARDING ============ */
@@ -1575,7 +1593,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
       var nm=document.getElementById('nw_name').value.trim(); if(!nm){alert('请填写世界名称');return;}
       var tpl=document.getElementById('nw_tpl_box').style.display!=='none'?document.getElementById('nw_tpl').value:null;
       state.worlds[nm]=newWorld(nm,tpl); if(WORLDS.indexOf(nm)<0) WORLDS.push(nm);
-      renderWorldList(); renderWorldDetail(nm);
+      renderWorldList(); renderDash(); showView('world-detail'); renderWorldDetail(nm);
     });
     var box=document.getElementById('nw_tpl_box');
     document.querySelectorAll('.nw-card').forEach(function(c){ c.addEventListener('click',function(){ document.querySelectorAll('.nw-card').forEach(function(x){x.style.borderColor='';}); c.style.borderColor='var(--accent)'; box.style.display=(c.dataset.nw==='tpl')?'block':'none'; }); });
@@ -1656,6 +1674,17 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
     renderBookCast(b); renderCharList();
   }
 
+  /* ============ DASHBOARD (数据同源) ============ */
+  function renderDash(){
+    var dw=document.getElementById('dashWorlds'); if(dw){
+      var names=Object.keys(state.worlds);
+      dw.innerHTML = names.length ? names.map(function(n){ var w=state.worlds[n]; return '<div class="world-card" data-world="'+n+'"><div class="wm serif">'+n+'</div><div class="wd">'+(w.intro||'新世界').slice(0,28)+'</div><div class="meta"><span class="pill">'+w.tmpl+'</span><span class="pill">'+(w.factions?w.factions.length:0)+' 势力</span><span class="pill">'+(w.skills?w.skills.length:0)+' 技能</span></div></div>'; }).join('') : '<p style="color:var(--muted)">还没有世界，点上方「新建世界」开始。</p>';
+    }
+    var wn=document.getElementById('dashWorldN'); if(wn) wn.textContent=Object.keys(state.worlds).length;
+    var bn=document.getElementById('dashBookN'); if(bn) bn.textContent=state.books.length;
+    var cn=document.getElementById('dashCharN'); if(cn) cn.textContent=state.characters.length;
+  }
+
   /* ============ INIT ============ */
   // seed initial worlds from templates
   [['霜与冠','西幻模板'],['霓虹下行','都市模板'],['灰烬纪','废土模板']].forEach(function(p){ state.worlds[p[0]]=newWorld(p[0],p[1]); });
@@ -1667,6 +1696,7 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
   renderCharList();
   renderBookList();
   renderWorldList();
+  renderDash();
   renderEdMood();
   showView('dashboard');
 
@@ -1676,8 +1706,10 @@ input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--accent)}
   var ws=document.getElementById('worldSearch'); if(ws) ws.addEventListener('input',renderWorldList);
   document.addEventListener('click',function(e){
     var gw=e.target.closest('[data-go]'); if(gw){ showView(gw.dataset.go); return; }
-    var el=e.target.closest('[data-world]'); if(el){ showView('world-detail'); renderWorldDetail(el.dataset.world); }
+    var el=e.target.closest('[data-world]'); if(el){ showView('world-detail'); renderWorldDetail(el.dataset.world); return; }
+    var jb=e.target.closest('[data-jumpbook]'); if(jb){ var bn=jb.dataset.jumpbook; var b=state.books.find(function(x){return x.name===bn;}); if(b){ openBookDetail(b.id); var tb=document.querySelector('[data-bt="b-cast"]'); if(tb) tb.click(); } }
   });
+  var ebs=document.getElementById('edBookSel'); if(ebs) ebs.addEventListener('change',function(){ var b=state.books.find(function(x){return x.id===ebs.value;}); if(b){ currentBook=b; var kv=document.getElementById('edBookKv'); if(kv) kv.textContent=b.name+'（'+b.world+'）'; var lede=document.getElementById('edLede'); if(lede) lede.textContent='《'+b.name+'》· 写作中。左侧章节，中间正文，右侧 AI 辅助与节奏提示。'; renderEdMood(); } });
 
   // book casting wiring
   var lb=document.getElementById('linkLibBtn'); if(lb) lb.addEventListener('click',function(){ if(currentBook) openLinkLibModal(currentBook); });
