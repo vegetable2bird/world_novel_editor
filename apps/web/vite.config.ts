@@ -18,5 +18,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // 本地沙箱禁用 node 批量删目录，改由构建脚本用 Python 预清理 dist
+    emptyOutDir: false,
   },
 });

@@ -25,8 +25,13 @@ async function bootstrap() {
   const webDist = candidates.find((p) => existsSync(p));
   if (webDist) {
     app.use(express.static(webDist));
-    app.get(/^(?!\/api\/).*/, (_req, res) => {
-      res.sendFile(path.join(webDist, 'index.html'));
+    // SPA 回退：非 /api 的 GET 请求一律返回 index.html
+    app.use((req, res, next) => {
+      if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(webDist, 'index.html'));
+      } else {
+        next();
+      }
     });
   }
 

@@ -72,6 +72,7 @@ model Book {
   world      World        @relation(fields: [worldId], references: [id], onDelete: Cascade)
   chapters   Chapter[]
   instances  CharacterInstance[]
+  trails     ActivityTrail[]
 
   @@index([userId])
   @@index([worldId])
@@ -226,7 +227,6 @@ model CharacterInstance {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
   character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
-  trails   ActivityTrail[]
 
   @@index([userId])
   @@index([bookId])
