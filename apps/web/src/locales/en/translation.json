@@ -38,10 +38,49 @@
     "delete": "Delete",
     "jumpWanjie": "Go to Myriad Worlds"
   },
+  "common": {
+    "error": "Failed to load. Please retry."
+  },
   "wanjie": {
     "title": "Myriad Worlds",
     "desc": "The macro-universe holding all worldviews and characters",
     "empty": "No world yet. Create one to start your story.",
     "newWorld": "New World"
+  },
+  "books": {
+    "title": "Books",
+    "desc": "Works attached to a world",
+    "name": "Title",
+    "description": "Description",
+    "world": "World",
+    "chapters": "Chapters",
+    "instances": "Native Characters",
+    "order": "Order",
+    "runtime": "Runtime State",
+    "allWorlds": "All Worlds",
+    "empty": "No books yet. Pick a world and create one.",
+    "newBook": "New Book",
+    "create": "New Book",
+    "edit": "Edit Book"
+  },
+  "characters": {
+    "wanjieTitle": "Myriad-World Characters",
+    "wanjieDesc": "Characters from the Myriad Worlds, reusable across books",
+    "nativeTitle": "Native",
+    "nativeDesc": "Characters that live only inside one book",
+    "name": "Name",
+    "archetype": "Archetype",
+    "bio": "Bio",
+    "role": "Role",
+    "book": "Book",
+    "source": "Myriad-World Source",
+    "instances": "Appearances",
+    "trails": "Trails",
+    "emptyWanjie": "No characters in the Myriad Worlds yet.",
+    "emptyNative": "No native characters yet.",
+    "newWanjie": "New Myriad-World Character",
+    "newNative": "New Native Character",
+    "create": "Create",
+    "edit": "Edit"
   }
 }

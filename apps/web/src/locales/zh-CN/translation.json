@@ -38,10 +38,49 @@
     "delete": "删除",
     "jumpWanjie": "跳转万界"
   },
+  "common": {
+    "error": "加载失败，请稍后重试"
+  },
   "wanjie": {
     "title": "万界",
     "desc": "容纳所有世界观与角色的宏观宇宙",
     "empty": "还没有世界，创建一个开始你的创作。",
     "newWorld": "新建世界"
+  },
+  "books": {
+    "title": "书籍",
+    "desc": "挂靠在某个世界下的作品",
+    "name": "书名",
+    "description": "简介",
+    "world": "所属世界",
+    "chapters": "章节",
+    "instances": "本作原生角色",
+    "order": "排序",
+    "runtime": "运行态",
+    "allWorlds": "全部世界",
+    "empty": "还没有书籍，挑一个世界新建作品。",
+    "newBook": "新建书籍",
+    "create": "新建书籍",
+    "edit": "编辑书籍"
+  },
+  "characters": {
+    "wanjieTitle": "万界角色",
+    "wanjieDesc": "来自万界、可跨书出演的角色",
+    "nativeTitle": "本作原生",
+    "nativeDesc": "仅在某一部作品内生长的角色",
+    "name": "名称",
+    "archetype": "原型",
+    "bio": "简介",
+    "role": "书中角色",
+    "book": "所属书",
+    "source": "万界来源",
+    "instances": "出演",
+    "trails": "轨迹",
+    "emptyWanjie": "万界中还没有角色。",
+    "emptyNative": "还没有本作原生角色。",
+    "newWanjie": "新建万界角色",
+    "newNative": "新建本作原生",
+    "create": "新建",
+    "edit": "编辑"
   }
 }
