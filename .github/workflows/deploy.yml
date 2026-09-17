@@ -1,15 +1,67 @@
 name: Deploy to Tencent Cloud Lighthouse
 
+# 触发：推送 main 或手动 workflow_dispatch。
+# 策略：GitHub Actions(Linux, 有外网) 完成依赖安装与构建，
+#       把「运行时产物包」SCP 到服务器，再 SSH 跑迁移 + systemd 重启。
+#       服务器本身不需要 npm install / 构建 / 装数据库（绕开禁外网限制）。
 on:
   push:
     branches: [main]
   workflow_dispatch: {}
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      PORT: "80"
     steps:
-      - name: SSH deploy to 154.8.220.104
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Build (shared + web + server)
+        run: npm run build
+
+      - name: Prune dev dependencies (runtime only)
+        run: npm prune --omit=dev
+
+      - name: Restore Prisma CLI (server runs `db push` at deploy)
+        run: npm install prisma@5.22.0 --no-save
+
+      - name: Assemble deploy bundle
+        run: |
+          rm -rf deploy-bundle
+          mkdir -p deploy-bundle
+          cp -rL apps/server/dist deploy-bundle/apps/server/dist
+          cp -rL apps/web/dist deploy-bundle/apps/web/dist
+          cp -rL prisma deploy-bundle/prisma
+          cp -rL node_modules deploy-bundle/node_modules
+          printf 'DATABASE_URL=%s\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=%s\nNODE_ENV=production\n' \
+            "${{ secrets.DATABASE_URL }}" "${{ secrets.JWT_SECRET }}" "$PORT" > deploy-bundle/.env
+          echo "bundle size:" && du -sh deploy-bundle
+
+      - name: Upload bundle to server (staging)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          source: "deploy-bundle/"
+          target: "/opt/wanxiang-v2-staging"
+
+      - name: Cutover, migrate & restart on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -19,12 +71,45 @@ jobs:
           script: |
             set -e
             APP_DIR=/opt/wanxiang-v2
+            STAGING=/opt/wanxiang-v2-staging
+
+            # 停掉旧服务（:80 上的旧 server.cjs 与可能的新服务），避免端口占用
+            systemctl stop wanxiang-v2 2>/dev/null || true
+            systemctl stop wne-server 2>/dev/null || true
+            systemctl disable wne-server 2>/dev/null || true
+
+            # 切换产物（staging -> 正式目录）
+            rm -rf "$APP_DIR"
+            mv "$STAGING" "$APP_DIR"
             cd "$APP_DIR"
-            git fetch --all
-            git reset --hard origin/main
-            npm install
-            npm run prisma:generate
-            npm run db:push
-            npm run build
-            pm2 restart wanxiang-server || pm2 start "node apps/server/dist/main.js" --name wanxiang-server
-            pm2 save
+
+            # 写入 systemd 单元（幂等）
+            cat > /etc/systemd/system/wanxiang-v2.service <<'UNIT'
+            [Unit]
+            Description=Wanxiang v2 Server
+            After=network.target
+
+            [Service]
+            Type=simple
+            WorkingDirectory=/opt/wanxiang-v2
+            ExecStart=/usr/bin/env node /opt/wanxiang-v2/apps/server/dist/main.js
+            Restart=always
+            RestartSec=3
+            Environment=NODE_ENV=production
+
+            [Install]
+            WantedBy=multi-user.target
+            UNIT
+            systemctl daemon-reload
+            systemctl enable wanxiang-v2
+
+            # 建表/同步 schema（托管 PG，走内网 DATABASE_URL）
+            node node_modules/.bin/prisma db push --skip-generate
+
+            # 启动
+            systemctl start wanxiang-v2
+            sleep 3
+            systemctl is-active wanxiang-v2
+
+            # 健康检查（用 node fetch，规避服务器被禁的 curl）
+            node -e "fetch('http://127.0.0.1:80/api/health').then(r=>{console.log('health',r.status);process.exit(r.ok?0:1)}).catch(e=>{console.error('health fail',e.message);process.exit(1)})"
