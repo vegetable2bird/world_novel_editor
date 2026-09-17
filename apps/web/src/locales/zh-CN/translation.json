@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "万象",
+    "subtitle": "世界操作系统型小说编辑器"
+  },
+  "terms": {
+    "wanjie": "万界",
+    "benjie": "本界",
+    "nativeCharacter": "本作原生",
+    "wanjieCharacter": "万界",
+    "info": "信息",
+    "exportAll": "导出全部",
+    "storage": "存储",
+    "settingState": "设定态",
+    "runtimeState": "运行态",
+    "life": "生活",
+    "cast": "参演心得"
+  },
+  "nav": {
+    "wanjie": "万界",
+    "books": "书籍",
+    "characters": "角色",
+    "console": "操作台",
+    "editor": "写作台",
+    "settings": "设置"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "email": "邮箱",
+    "password": "密码",
+    "displayName": "昵称",
+    "logout": "退出登录"
+  },
+  "actions": {
+    "create": "新建",
+    "save": "保存",
+    "delete": "删除",
+    "jumpWanjie": "跳转万界"
+  },
+  "wanjie": {
+    "title": "万界",
+    "desc": "容纳所有世界观与角色的宏观宇宙",
+    "empty": "还没有世界，创建一个开始你的创作。",
+    "newWorld": "新建世界"
+  }
+}

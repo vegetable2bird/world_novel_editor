@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Wanxiang",
+    "subtitle": "World-OS Novel Editor"
+  },
+  "terms": {
+    "wanjie": "The Myriad Worlds",
+    "benjie": "Base World",
+    "nativeCharacter": "Native Character",
+    "wanjieCharacter": "Myriad-World Character",
+    "info": "Info",
+    "exportAll": "Export All",
+    "storage": "Storage",
+    "settingState": "Canonical State",
+    "runtimeState": "Runtime State",
+    "life": "Daily Life",
+    "cast": "Cast Reflection"
+  },
+  "nav": {
+    "wanjie": "Myriad Worlds",
+    "books": "Books",
+    "characters": "Characters",
+    "console": "Console",
+    "editor": "Editor",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display Name",
+    "logout": "Sign Out"
+  },
+  "actions": {
+    "create": "Create",
+    "save": "Save",
+    "delete": "Delete",
+    "jumpWanjie": "Go to Myriad Worlds"
+  },
+  "wanjie": {
+    "title": "Myriad Worlds",
+    "desc": "The macro-universe holding all worldviews and characters",
+    "empty": "No world yet. Create one to start your story.",
+    "newWorld": "New World"
+  }
+}

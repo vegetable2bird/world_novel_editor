@@ -1,0 +1,281 @@
+// 万象 v2 · Prisma 数据模型（PostgreSQL，多租户）
+// 约定：所有业务表带 userId，后端查询强制 where userId = ctx.user.id 做隔离。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  worlds          World[]
+  books           Book[]
+  chapters        Chapter[]
+  entities        WorldEntity[]
+  relations       EntityRelation[]
+  variables       Variable[]
+  foreshadows     Foreshadow[]
+  timelineEvents  TimelineEvent[]
+  characters      Character[]
+  instances       CharacterInstance[]
+  activityTrails  ActivityTrail[]
+  operations      ConsoleOperation[]
+  refreshTokens   RefreshToken[]
+}
+
+// 世界（本界/万界条目的载体）。万界 = 用户的多个 World 的集合（前端聚合展示）。
+model World {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  visibility  String   @default("private") // private | public
+  coverColor  String?  // 主题色，前端表格/卡片用
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  books     Book[]
+  entities  WorldEntity[]
+  relations EntityRelation[]
+  variables Variable[]
+  foreshadows Foreshadow[]
+  timelineEvents TimelineEvent[]
+  operations ConsoleOperation[]
+
+  @@index([userId])
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  userId      String
+  worldId     String
+  name        String
+  description String?
+  order       Int      @default(0)
+  // 双线世界：设定态（本界正典）不在此改；运行态副本以 runtimeJson 承载，不回写设定态
+  runtimeJson String?  // JSON：本书运行态演化副本（变量Δ/事件叠加等）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world      World        @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  chapters   Chapter[]
+  instances  CharacterInstance[]
+
+  @@index([userId])
+  @@index([worldId])
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book     Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  versions ChapterVersion[]
+
+  @@index([userId])
+  @@index([bookId])
+}
+
+model ChapterVersion {
+  id        String   @id @default(cuid())
+  chapterId String
+  version   Int      @default(1)
+  content   String   @default("")
+  note      String?  // 作者批注 / AI 生成说明
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+}
+
+// 世界实体（地理/势力/种族/人物/规则…），fields 用 JSONB 存半结构化属性
+model WorldEntity {
+  id        String   @id @default(cuid())
+  userId    String
+  worldId   String
+  type      String   // geography|faction|race|figure|rule|item…
+  name      String
+  fields    Json?    // 自定义属性
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world    World           @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  relationsOut EntityRelation[] @relation("RelationSource")
+  relationsIn  EntityRelation[] @relation("RelationTarget")
+
+  @@index([userId])
+  @@index([worldId])
+}
+
+model EntityRelation {
+  id        String   @id @default(cuid())
+  userId    String
+  worldId   String
+  sourceId  String
+  targetId  String
+  kind      String   // family|ally|enemy|located_in|rule_of…
+  label     String?
+  createdAt DateTime @default(now())
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world  World       @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  source WorldEntity @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target WorldEntity @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([worldId])
+}
+
+model Variable {
+  id        String   @id @default(cuid())
+  userId    String
+  worldId   String
+  key       String   // guoli|minxin|lingqi…
+  label     String?
+  value     Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, key])
+  @@index([userId])
+}
+
+model Foreshadow {
+  id        String   @id @default(cuid())
+  userId    String
+  worldId   String
+  text      String
+  status    String   @default("open") // open|planted|resolved
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  worldId     String
+  title       String
+  at          String?  // 时间线锚点（游戏内纪元/年份）
+  description String?
+  createdAt   DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// 万界角色：跨世界共享，归用户所有
+model Character {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  archetype String?  // 原型/定位
+  bio       String?
+  fields    Json?    // 自定义属性
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instances CharacterInstance[]
+  trails   ActivityTrail[]
+
+  @@index([userId])
+}
+
+// 本作原生角色：挂在具体书里；可引用一个万界角色，也可独立
+model CharacterInstance {
+  id           String   @id @default(cuid())
+  userId       String
+  bookId       String
+  characterId  String?  // 若源自万界角色
+  name         String
+  role         String?  // 本书中的身份
+  bio          String?
+  originWorldId String? // 来源世界（万界/本界）
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  trails   ActivityTrail[]
+
+  @@index([userId])
+  @@index([bookId])
+}
+
+// 活动轨迹（替代随机「今日情绪」）：规则化生成，按角色/日期
+model ActivityTrail {
+  id         String   @id @default(cuid())
+  userId     String
+  characterId String
+  bookId     String?  // 参演时关联书
+  date       DateTime
+  kind       String   @default("life") // life|cast（生活 / 参演心得）
+  text       String
+  createdAt  DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  book      Book?     @relation(fields: [bookId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([characterId])
+}
+
+// 操作台推演记录（轻量规则引擎，不额外调 LLM）
+model ConsoleOperation {
+  id        String   @id @default(cuid())
+  userId    String
+  worldId   String
+  bookId    String?
+  type      String   // advance_time|event|variable|direction…
+  payload   Json?
+  result    Json?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

@@ -1,25 +1,11 @@
-# 依赖与构建产物
 node_modules/
 dist/
-dist-ssr/
-*.local
-
-# Vite / Vitest 临时产物（构建时自动生成，不入库）
-vite.config.ts.timestamp-*
-vitest.config.ts.timestamp-*
-*.tsbuildinfo
-
-# 环境密钥（绝不提交）
+build/
 .env
-.env.local
-server/.env
-
-# 日志
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# 编辑器 / 系统
-.vscode/*
-!.vscode/extensions.json
+.env.*
+*.log
 .DS_Store
+coverage/
+*.tsbuildinfo
+.idea/
+.vscode/

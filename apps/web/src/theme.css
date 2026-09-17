@@ -1,0 +1,31 @@
+/* 万象 · 多主题系统（CSS 变量）
+   默认：墨金深色（--theme: ink-gold）
+   切换：<html data-theme="light"> 等 */
+:root,
+[data-theme='ink-gold'] {
+  --bg: #0b0f1a;
+  --surface: #121829;
+  --border: #243049;
+  --ink: #e8e3d4;
+  --muted: #8b93a7;
+  --accent: #d4af37; /* 金 */
+  --seal: #c8453a;   /* 印章红 */
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --border: #e2ddd0;
+  --ink: #1c2230;
+  --muted: #6b7280;
+  --accent: #b8902a;
+  --seal: #b23a30;
+  color-scheme: light;
+}
+
+/* 角色归属色（产品铁律：万界=金，本作原生=印章红） */
+:root {
+  --char-wanjie: var(--accent);
+  --char-native: var(--seal);
+}
