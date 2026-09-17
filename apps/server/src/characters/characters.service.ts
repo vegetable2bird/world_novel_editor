@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Character } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
@@ -12,22 +12,28 @@ export class CharactersService {
 
   // ===== 万界角色（跨世界共享，归用户） =====
   listCharacters(userId: string) {
-    return this.prisma.character.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      include: { _count: { select: { instances: true, trails: true } } },
-    });
+    return this.prisma.character
+      .findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        include: { _count: { select: { instances: true, trails: true } } },
+      })
+      .then((list) => list.map((c) => this.toClient(c)));
   }
 
   async getCharacter(userId: string, id: string) {
     const c = await this.prisma.character.findFirst({ where: { id, userId } });
     if (!c) throw new NotFoundException('character not found');
-    return c;
+    return this.toClient(c);
   }
 
   createCharacter(userId: string, dto: CreateCharacterDto) {
     return this.prisma.character.create({
-      data: { ...dto, userId } as Prisma.CharacterUncheckedCreateInput,
+      data: {
+        ...dto,
+        fields: dto.fields ? JSON.stringify(dto.fields) : undefined,
+        userId,
+      } as Prisma.CharacterUncheckedCreateInput,
     });
   }
 
@@ -35,7 +41,10 @@ export class CharactersService {
     await this.getCharacter(userId, id);
     return this.prisma.character.update({
       where: { id },
-      data: dto as Prisma.CharacterUpdateInput,
+      data: {
+        ...dto,
+        fields: dto.fields !== undefined ? JSON.stringify(dto.fields) : undefined,
+      } as Prisma.CharacterUpdateInput,
     });
   }
 
@@ -80,5 +89,10 @@ export class CharactersService {
   async removeInstance(userId: string, id: string) {
     await this.getInstance(userId, id);
     return this.prisma.characterInstance.delete({ where: { id } });
+  }
+
+  // SQLite 不支持 Json 类型，fields 以字符串存储，出入库在此序列化/反序列化
+  private toClient(c: Character) {
+    return { ...c, fields: c.fields ? JSON.parse(c.fields) : null };
   }
 }

@@ -3,7 +3,9 @@ name: Deploy to Tencent Cloud Lighthouse
 # 触发：推送 main 或手动 workflow_dispatch。
 # 策略：GitHub Actions(Linux, 有外网) 完成依赖安装与构建，
 #       把「运行时产物包」SCP 到服务器，再 SSH 跑迁移 + systemd 重启。
-#       服务器本身不需要 npm install / 构建 / 装数据库（绕开禁外网限制）。
+#       服务器本身不需要 npm install / 构建（绕开禁外网限制）。
+#       数据库用 SQLite（零成本）：DB 文件落 /var/lib/wanxiang-v2/wanxiang.db，
+#       位于应用目录之外，避免每次部署被覆盖。
 on:
   push:
     branches: [main]
@@ -47,8 +49,8 @@ jobs:
           cp -rL apps/web/dist deploy-bundle/apps/web/dist
           cp -rL prisma deploy-bundle/prisma
           cp -rL node_modules deploy-bundle/node_modules
-          printf 'DATABASE_URL=%s\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=%s\nNODE_ENV=production\n' \
-            "${{ secrets.DATABASE_URL }}" "${{ secrets.JWT_SECRET }}" "$PORT" > deploy-bundle/.env
+          printf 'DATABASE_URL=file:/var/lib/wanxiang-v2/wanxiang.db\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=%s\nNODE_ENV=production\n' \
+            "${{ secrets.JWT_SECRET }}" "$PORT" > deploy-bundle/.env
           echo "bundle size:" && du -sh deploy-bundle
 
       - name: Upload bundle to server (staging)
@@ -72,6 +74,7 @@ jobs:
             set -e
             APP_DIR=/opt/wanxiang-v2
             STAGING=/opt/wanxiang-v2-staging
+            DATA_DIR=/var/lib/wanxiang-v2
 
             # 停掉旧服务（:80 上的旧 server.cjs 与可能的新服务），避免端口占用
             systemctl stop wanxiang-v2 2>/dev/null || true
@@ -96,6 +99,7 @@ jobs:
             Restart=always
             RestartSec=3
             Environment=NODE_ENV=production
+            EnvironmentFile=/opt/wanxiang-v2/.env
 
             [Install]
             WantedBy=multi-user.target
@@ -103,7 +107,9 @@ jobs:
             systemctl daemon-reload
             systemctl enable wanxiang-v2
 
-            # 建表/同步 schema（托管 PG，走内网 DATABASE_URL）
+            # 建库/同步 schema（SQLite，DB 文件落持久目录，避免部署覆盖）
+            mkdir -p "$DATA_DIR"
+            export DATABASE_URL="file:$DATA_DIR/wanxiang.db"
             node node_modules/.bin/prisma db push --skip-generate
 
             # 启动
