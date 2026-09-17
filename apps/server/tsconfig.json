@@ -18,11 +18,8 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "@wanxiang/shared": ["../../packages/shared/src/index.ts"]
-    }
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*", "../../packages/shared/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

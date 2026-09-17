@@ -1,14 +1,15 @@
-name: Deploy to Tencent Cloud
+name: Deploy to Tencent Cloud Lighthouse
 
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH deploy
+      - name: SSH deploy to 154.8.220.104
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -17,10 +18,13 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
             set -e
-            cd /opt/wanxiang-v2
-            git pull --ff-only
+            APP_DIR=/opt/wanxiang-v2
+            cd "$APP_DIR"
+            git fetch --all
+            git reset --hard origin/main
             npm install
-            npm run migrate
+            npm run prisma:generate
+            npm run db:push
             npm run build
-            pm2 restart wanxiang-server || pm2 start "npm run start:prod -w apps/server" --name wanxiang-server
+            pm2 restart wanxiang-server || pm2 start "node apps/server/dist/main.js" --name wanxiang-server
             pm2 save

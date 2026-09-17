@@ -16,8 +16,14 @@ async function bootstrap() {
   );
 
   // 生产：托管前端构建产物（apps/web/dist），非 /api 路由回退 index.html
-  const webDist = path.resolve(process.cwd(), 'apps/web/dist');
-  if (existsSync(webDist)) {
+  // 兼容不同 cwd（仓库根 / apps/server），逐一探测候选路径
+  const candidates = [
+    path.resolve(__dirname, '../../../apps/web/dist'),
+    path.resolve(process.cwd(), 'apps/web/dist'),
+    path.resolve(process.cwd(), '../web/dist'),
+  ];
+  const webDist = candidates.find((p) => existsSync(p));
+  if (webDist) {
     app.use(express.static(webDist));
     app.get(/^(?!\/api\/).*/, (_req, res) => {
       res.sendFile(path.join(webDist, 'index.html'));
