@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom';
 import './i18n';
 import { router } from './router';
 import { initTheme } from './theme';
+import './theme.css';
 import './index.css';
 
 initTheme();
