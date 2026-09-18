@@ -30,8 +30,34 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      # 546 依赖在 GitHub runner 上装约 10 分钟；网络/内存抖动常令 npm 中途被信号打断
+      # 报 "Exit handler never called!"。故：关掉慢的审计/资助网络调用、放宽超时、重试 3 次、
+      # 并跳过 prisma 安装期引擎下载（引擎在后续 prisma:generate 步骤按需拉取）。
+      - name: Install dependencies (retry-hardened)
+        env:
+          PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
+        run: |
+          npm config set fund false
+          npm config set audit false
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 10000
+          npm config set fetch-retry-maxtimeout 180000
+          npm config set fetch-timeout 600000
+          ok=0
+          for i in 1 2 3; do
+            echo "::group::npm ci attempt $i"
+            if npm ci --no-audit --no-fund; then
+              echo "::endgroup::"
+              echo "npm ci succeeded on attempt $i"
+              ok=1
+              break
+            fi
+            echo "::endgroup::"
+            echo "attempt $i failed; cleaning node_modules and retrying"
+            rm -rf node_modules
+            sleep 15
+          done
+          if [ "$ok" != "1" ]; then echo "npm ci failed after 3 attempts"; exit 1; fi
 
       - name: Generate Prisma client
         run: npm run prisma:generate
@@ -43,7 +69,7 @@ jobs:
         run: npm prune --omit=dev
 
       - name: Restore Prisma CLI (server runs `db push` at deploy)
-        run: npm install prisma@5.22.0 --no-save
+        run: npm install prisma@5.22.0 --no-save --no-audit --no-fund
 
       - name: Assemble deploy bundle
         run: |
