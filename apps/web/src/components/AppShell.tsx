@@ -1,38 +1,86 @@
-import { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Fragment, ReactNode } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../store/ui';
 import { toggleTheme } from '../theme';
 import i18n, { SUPPORTED_LOCALES } from '../i18n';
 
+type NavItem = { to: string; icon: string; key: string; group: string };
+const NAV: NavItem[] = [
+  { to: '/dashboard', icon: '▦', key: 'dashboard', group: 'main' },
+  { to: '/wanjie', icon: '🌐', key: 'wanjie', group: 'create' },
+  { to: '/books', icon: '📚', key: 'books', group: 'create' },
+  { to: '/characters', icon: '🧬', key: 'characters', group: 'create' },
+  { to: '/editor', icon: '✍️', key: 'editor', group: 'create' },
+  { to: '/console', icon: '⚡', key: 'console', group: 'ai' },
+  { to: '/settings', icon: '⚙️', key: 'settings', group: 'sys' },
+];
+const GROUP_LABELS: Record<string, string> = {
+  main: '主菜单',
+  create: '创作管理',
+  ai: '智能',
+  sys: '系统',
+};
+const CRUMB: Record<string, string> = {
+  '/dashboard': '工作台',
+  '/wanjie': '世界观管理',
+  '/books': '书籍管理',
+  '/characters': '角色管理',
+  '/editor': '写作',
+  '/console': 'AI 操作系统台',
+  '/settings': '配置',
+};
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const clearAuth = useUi((s) => s.clearAuth);
   const setLocale = useUi((s) => s.setLocale);
+  const user = useUi((s) => s.user);
+  const loc = useLocation();
+  const crumb = CRUMB[loc.pathname] ?? '万象';
+  const initial = (user?.displayName || user?.email || '林')?.slice(0, 1);
+
+  let lastGroup = '';
+  const navNodes = NAV.map((n) => {
+    const sep =
+      n.group !== lastGroup ? (
+        <div className="nav-group" key={'g-' + n.group}>
+          {GROUP_LABELS[n.group]}
+        </div>
+      ) : null;
+    lastGroup = n.group;
+    return (
+      <Fragment key={n.to}>
+        {sep}
+        <NavLink to={n.to} className={({ isActive }) => 'side-link' + (isActive ? ' active' : '')}>
+          <span className="ic">{n.icon}</span> {t('nav.' + n.key)}
+        </NavLink>
+      </Fragment>
+    );
+  });
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">{t('terms.wanjie')}</div>
-        <nav className="side-nav">
-          <NavLink to="/wanjie" className="side-link">
-            {t('nav.wanjie')}
-          </NavLink>
-          <NavLink to="/books" className="side-link">
-            {t('nav.books')}
-          </NavLink>
-          <NavLink to="/characters" className="side-link">
-            {t('nav.characters')}
-          </NavLink>
-        </nav>
-        <div className="side-foot">{t('app.subtitle')}</div>
+        <div className="brand-seal">
+          <span className="seal">象</span>
+          <span className="brand">万象</span>
+        </div>
+        <nav className="side-nav">{navNodes}</nav>
+        <div className="side-foot">原型示意 · v2 · 双线世界 / 书籍枢纽 / 极简写作台</div>
       </aside>
 
       <div className="main-col">
         <header className="topbar">
+          <div className="brand-mini">
+            <span className="seal">象</span> 万象
+          </div>
+          <div className="crumb-box">
+            <div className="crumb">{crumb}</div>
+          </div>
           <div className="spacer" />
-          <button className="ghost" onClick={() => toggleTheme()} title="theme">
-            🌗
+          <button className="ghost" onClick={() => toggleTheme()} title="主题">
+            🎨
           </button>
           <select
             className="ghost"
@@ -48,6 +96,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </option>
             ))}
           </select>
+          <button className="avatar-btn" title={user?.displayName || user?.email || ''}>
+            {initial}
+          </button>
           <button className="ghost" onClick={() => clearAuth()}>
             {t('auth.logout')}
           </button>

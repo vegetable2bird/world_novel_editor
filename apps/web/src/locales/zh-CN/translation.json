@@ -22,7 +22,8 @@
     "characters": "角色",
     "console": "操作台",
     "editor": "写作台",
-    "settings": "设置"
+    "settings": "设置",
+    "dashboard": "工作台"
   },
   "auth": {
     "login": "登录",
