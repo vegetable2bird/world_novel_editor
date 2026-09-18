@@ -30,34 +30,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      # 546 依赖在 GitHub runner 上装约 10 分钟；网络/内存抖动常令 npm 中途被信号打断
-      # 报 "Exit handler never called!"。故：关掉慢的审计/资助网络调用、放宽超时、重试 3 次、
-      # 并跳过 prisma 安装期引擎下载（引擎在后续 prisma:generate 步骤按需拉取）。
-      - name: Install dependencies (retry-hardened)
+      # 曾出现「npm ci 静默卡死 8 分钟后崩(Exit handler never called!)」——
+      # 真因是 lockfile 的 resolved 字段全部指向内网私有镜像(172.16.x.x)，runner 在公网不可达。
+      # 现已换源为 registry.npmjs.org 并由仓库根 .npmrc 钉死，安装恢复正常速度。
+      - name: Install dependencies
         env:
           PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
         run: |
-          npm config set fund false
-          npm config set audit false
-          npm config set fetch-retries 5
-          npm config set fetch-retry-mintimeout 10000
-          npm config set fetch-retry-maxtimeout 180000
-          npm config set fetch-timeout 600000
-          ok=0
-          for i in 1 2 3; do
-            echo "::group::npm ci attempt $i"
-            if npm ci --no-audit --no-fund; then
-              echo "::endgroup::"
-              echo "npm ci succeeded on attempt $i"
-              ok=1
-              break
-            fi
-            echo "::endgroup::"
-            echo "attempt $i failed; cleaning node_modules and retrying"
-            rm -rf node_modules
-            sleep 15
-          done
-          if [ "$ok" != "1" ]; then echo "npm ci failed after 3 attempts"; exit 1; fi
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 300000
+          npm ci --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npm run prisma:generate
