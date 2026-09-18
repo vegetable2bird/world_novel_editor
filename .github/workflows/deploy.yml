@@ -47,19 +47,26 @@ jobs:
       - name: Build (shared + web + server)
         run: npm run build
 
+      # 在 runner 上完成 SQLite schema 迁移（建空库），避免服务器侧再跑 prisma CLI。
+      # runner 依赖完整、含 prisma 引擎，db push 一次成型；产物库文件随包下发，
+      # 服务器仅在首次部署时拷贝到持久目录，之后保留已有数据。
+      - name: Create SQLite DB (migrate schema on runner)
+        run: |
+          mkdir -p db-seed
+          DATABASE_URL="file:$(pwd)/db-seed/wanxiang.db" npx prisma db push --skip-generate --schema prisma/schema.prisma
+          ls -la db-seed
+
       - name: Prune dev dependencies (runtime only)
         run: npm prune --omit=dev
-
-      - name: Restore Prisma CLI (server runs `db push` at deploy)
-        run: npm install prisma@5.22.0 --no-save --no-audit --no-fund
 
       - name: Assemble deploy bundle
         run: |
           rm -rf deploy-bundle
-          mkdir -p deploy-bundle/apps/server deploy-bundle/apps/web deploy-bundle/prisma
+          mkdir -p deploy-bundle/apps/server deploy-bundle/apps/web deploy-bundle/prisma/seed
           cp -rL apps/server/dist deploy-bundle/apps/server/
           cp -rL apps/web/dist deploy-bundle/apps/web/
           cp -rL prisma deploy-bundle/prisma
+          cp -rL db-seed/wanxiang.db deploy-bundle/prisma/seed/wanxiang.db
           cp -rL node_modules deploy-bundle/node_modules
           echo "bundle size:" && du -sh deploy-bundle
 
@@ -134,10 +141,14 @@ jobs:
             sudo systemctl daemon-reload
             sudo systemctl enable wanxiang-v2
 
-            # 建库/同步 schema（SQLite，DB 文件落持久目录，避免部署覆盖）
+            # 首次部署初始化 DB（保留已有数据，不覆盖）
             sudo mkdir -p "$DATA_DIR"
-            sudo env DATABASE_URL="file:$DATA_DIR/wanxiang.db" \
-              node "$APP_DIR/node_modules/.bin/prisma" db push --skip-generate --schema "$APP_DIR/prisma/schema.prisma"
+            if [ ! -f "$DATA_DIR/wanxiang.db" ]; then
+              sudo cp "$APP_DIR/prisma/seed/wanxiang.db" "$DATA_DIR/wanxiang.db"
+              echo "seed DB 已初始化到 $DATA_DIR/wanxiang.db"
+            else
+              echo "已有 DB，保持不变"
+            fi
 
             # 启动
             sudo systemctl restart wanxiang-v2
