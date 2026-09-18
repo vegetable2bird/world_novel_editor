@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# 万象 v2 · 服务器首次预置（在 154.8.220.104 上以 root 执行一次）
+# 万象 v2 · 服务器首次预置（在 154.8.220.104 上执行一次）
+# 用法（普通用户带 sudo）：sudo bash server-setup.sh
+# 注：部署工作流本身已会写 systemd 单元，本脚本仅为可选的"一次性地基"。
 #
 # 重要：本脚本【不再】安装 PostgreSQL / npm / pm2，也不在服务器上构建。
 # 构建与产物分发由 GitHub Actions 完成（见 .github/workflows/deploy.yml）：

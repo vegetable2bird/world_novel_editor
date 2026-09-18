@@ -2,10 +2,14 @@ name: Deploy to Tencent Cloud Lighthouse
 
 # 触发：推送 main 或手动 workflow_dispatch。
 # 策略：GitHub Actions(Linux, 有外网) 完成依赖安装与构建，
-#       把「运行时产物包」SCP 到服务器，再 SSH 跑迁移 + systemd 重启。
+#       把「运行时产物包」SCP 到服务器【用户家目录】(普通用户可写)，
+#       再 SSH 用 sudo 切库 + 写 systemd 单元 + 重启。
 #       服务器本身不需要 npm install / 构建（绕开禁外网限制）。
 #       数据库用 SQLite（零成本）：DB 文件落 /var/lib/wanxiang-v2/wanxiang.db，
 #       位于应用目录之外，避免每次部署被覆盖。
+#
+# 服务器登录用户为普通用户（腾讯云 Ubuntu 镜像默认 `ubuntu`），
+# 因此：scp 目标必须是家目录；所有特权操作走 sudo（需 NOPASSWD）。
 on:
   push:
     branches: [main]
@@ -49,11 +53,10 @@ jobs:
           cp -rL apps/web/dist deploy-bundle/apps/web/dist
           cp -rL prisma deploy-bundle/prisma
           cp -rL node_modules deploy-bundle/node_modules
-          printf 'DATABASE_URL=file:/var/lib/wanxiang-v2/wanxiang.db\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=%s\nNODE_ENV=production\n' \
-            "${{ secrets.JWT_SECRET }}" "$PORT" > deploy-bundle/.env
           echo "bundle size:" && du -sh deploy-bundle
 
-      - name: Upload bundle to server (staging)
+      # 传到普通用户可写的家目录（/opt 与 /etc 普通用户写不了）
+      - name: Upload bundle to server (staging in home)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -61,9 +64,9 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           source: "deploy-bundle/"
-          target: "/opt/wanxiang-v2-staging"
+          target: "/home/ubuntu/wanxiang-staging"
 
-      - name: Cutover, migrate & restart on server
+      - name: Cutover, migrate & restart on server (sudo)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -71,23 +74,39 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
-            set -e
+            set -euo pipefail
             APP_DIR=/opt/wanxiang-v2
-            STAGING=/opt/wanxiang-v2-staging
             DATA_DIR=/var/lib/wanxiang-v2
+            STAGING_ROOT=/home/ubuntu/wanxiang-staging
 
-            # 停掉旧服务（:80 上的旧 server.cjs 与可能的新服务），避免端口占用
-            systemctl stop wanxiang-v2 2>/dev/null || true
-            systemctl stop wne-server 2>/dev/null || true
-            systemctl disable wne-server 2>/dev/null || true
+            # 定位产物包根目录（scp 落点可能多套一层 deploy-bundle）
+            MAIN_JS=$(find "$STAGING_ROOT" -maxdepth 6 -path '*apps/server/dist/main.js' | head -1)
+            if [ -z "$MAIN_JS" ]; then echo "未找到产物 main.js，检查 scp 落点"; exit 1; fi
+            BUNDLE=$(cd "$(dirname "$MAIN_JS")/../../.." && pwd)
+            echo "bundle root: $BUNDLE"
+
+            # 释放 80 端口：停掉旧服务（旧 server.cjs 与可能的新服务）
+            sudo systemctl stop wanxiang-v2 2>/dev/null || true
+            sudo systemctl stop wne-server 2>/dev/null || true
+            sudo systemctl disable wne-server 2>/dev/null || true
 
             # 切换产物（staging -> 正式目录）
-            rm -rf "$APP_DIR"
-            mv "$STAGING" "$APP_DIR"
-            cd "$APP_DIR"
+            sudo rm -rf "$APP_DIR"
+            sudo mv "$BUNDLE" "$APP_DIR"
+
+            # 写运行时 .env（含 secret；GitHub 日志会自动打码）
+            # JWT_SECRET 行由 GitHub Actions 在派发前替换为真实值；
+            # 引号 heredoc 防止 secret 内特殊字符被 shell 二次展开。
+            sudo tee "$APP_DIR/.env" >/dev/null <<'ENV'
+            DATABASE_URL=file:/var/lib/wanxiang-v2/wanxiang.db
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=7d
+            PORT=80
+            NODE_ENV=production
+            ENV
 
             # 写入 systemd 单元（幂等）
-            cat > /etc/systemd/system/wanxiang-v2.service <<'UNIT'
+            sudo tee /etc/systemd/system/wanxiang-v2.service >/dev/null <<'UNIT'
             [Unit]
             Description=Wanxiang v2 Server
             After=network.target
@@ -104,18 +123,18 @@ jobs:
             [Install]
             WantedBy=multi-user.target
             UNIT
-            systemctl daemon-reload
-            systemctl enable wanxiang-v2
+            sudo systemctl daemon-reload
+            sudo systemctl enable wanxiang-v2
 
             # 建库/同步 schema（SQLite，DB 文件落持久目录，避免部署覆盖）
-            mkdir -p "$DATA_DIR"
-            export DATABASE_URL="file:$DATA_DIR/wanxiang.db"
-            node node_modules/.bin/prisma db push --skip-generate
+            sudo mkdir -p "$DATA_DIR"
+            sudo env DATABASE_URL="file:$DATA_DIR/wanxiang.db" \
+              node "$APP_DIR/node_modules/.bin/prisma" db push --skip-generate --schema "$APP_DIR/prisma/schema.prisma"
 
             # 启动
-            systemctl start wanxiang-v2
+            sudo systemctl restart wanxiang-v2
             sleep 3
-            systemctl is-active wanxiang-v2
+            sudo systemctl is-active wanxiang-v2
 
             # 健康检查（用 node fetch，规避服务器被禁的 curl）
             node -e "fetch('http://127.0.0.1:80/api/health').then(r=>{console.log('health',r.status);process.exit(r.ok?0:1)}).catch(e=>{console.error('health fail',e.message);process.exit(1)})"
