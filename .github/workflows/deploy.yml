@@ -15,6 +15,12 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+# 同一时刻只允许一个部署运行；新推送会自动取消进行中的旧部署，
+# 避免两个 job 同时 scp 到服务器家目录造成产物目录冲突。
+concurrency:
+  group: deploy-lighthouse
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -59,16 +65,21 @@ jobs:
       - name: Prune dev dependencies (runtime only)
         run: npm prune --omit=dev
 
-      - name: Assemble deploy bundle
+      # 打成单个 tar.gz 再传。
+      # 原因：node_modules 有 2 万+ 个小文件，scp 逐文件传输时每个文件都有
+      # 一次协议往返，实测该步耗时 26 分钟（1587s），而实际数据量仅 ~250MB，
+      # 瓶颈是文件数量而非带宽。打成单文件后传输降到 1-2 分钟。
+      # tar 默认保留符号链接，也避免了此前 `cp -L` 解引用导致 .bin 膨胀/错位的问题。
+      - name: Assemble deploy bundle (tar.gz)
         run: |
-          rm -rf deploy-bundle
-          mkdir -p deploy-bundle/apps/server deploy-bundle/apps/web deploy-bundle/prisma/seed
-          cp -rL apps/server/dist deploy-bundle/apps/server/
-          cp -rL apps/web/dist deploy-bundle/apps/web/
-          cp -rL prisma deploy-bundle/prisma
-          cp -rL db-seed/wanxiang.db deploy-bundle/prisma/seed/wanxiang.db
-          cp -rL node_modules deploy-bundle/node_modules
-          echo "bundle size:" && du -sh deploy-bundle
+          rm -f deploy-bundle.tgz
+          tar -czf deploy-bundle.tgz \
+            apps/server/dist \
+            apps/web/dist \
+            prisma \
+            db-seed \
+            node_modules
+          echo "bundle size:" && ls -lh deploy-bundle.tgz
 
       # 传到普通用户可写的家目录（/opt 与 /etc 普通用户写不了）
       - name: Upload bundle to server (staging in home)
@@ -78,8 +89,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: "deploy-bundle/"
-          target: "/home/ubuntu/wanxiang-staging"
+          source: "deploy-bundle.tgz"
+          target: "/home/ubuntu"
 
       - name: Cutover, migrate & restart on server (sudo)
         uses: appleboy/ssh-action@v1.0.3
@@ -94,11 +105,26 @@ jobs:
             DATA_DIR=/var/lib/wanxiang-v2
             STAGING_ROOT=/home/ubuntu/wanxiang-staging
 
-            # 定位产物包根目录（scp 落点可能多套一层 deploy-bundle）
+            # 解开单文件传输包（落在家目录，普通用户可写）
+            rm -rf "$STAGING_ROOT"
+            mkdir -p "$STAGING_ROOT"
+            tar -xzf /home/ubuntu/deploy-bundle.tgz -C "$STAGING_ROOT"
+
+            # 定位产物包根目录
             MAIN_JS=$(find "$STAGING_ROOT" -maxdepth 6 -path '*apps/server/dist/main.js' | head -1)
-            if [ -z "$MAIN_JS" ]; then echo "未找到产物 main.js，检查 scp 落点"; exit 1; fi
+            if [ -z "$MAIN_JS" ]; then echo "未找到产物 main.js，检查解包结果"; exit 1; fi
             BUNDLE=$(cd "$(dirname "$MAIN_JS")/../../.." && pwd)
             echo "bundle root: $BUNDLE"
+
+            # 首次部署初始化 DB（保留已有数据，不覆盖）
+            # 从 staging 的 db-seed 读取（在 mv 之前，避免 seed 文件混进应用目录）
+            sudo mkdir -p "$DATA_DIR"
+            if [ ! -f "$DATA_DIR/wanxiang.db" ]; then
+              sudo cp "$STAGING_ROOT/db-seed/wanxiang.db" "$DATA_DIR/wanxiang.db"
+              echo "seed DB 已初始化到 $DATA_DIR/wanxiang.db"
+            else
+              echo "已有 DB，保持不变"
+            fi
 
             # 释放 80 端口：停掉旧服务（旧 server.cjs 与可能的新服务）
             sudo systemctl stop wanxiang-v2 2>/dev/null || true
@@ -140,15 +166,6 @@ jobs:
             UNIT
             sudo systemctl daemon-reload
             sudo systemctl enable wanxiang-v2
-
-            # 首次部署初始化 DB（保留已有数据，不覆盖）
-            sudo mkdir -p "$DATA_DIR"
-            if [ ! -f "$DATA_DIR/wanxiang.db" ]; then
-              sudo cp "$APP_DIR/prisma/seed/wanxiang.db" "$DATA_DIR/wanxiang.db"
-              echo "seed DB 已初始化到 $DATA_DIR/wanxiang.db"
-            else
-              echo "已有 DB，保持不变"
-            fi
 
             # 启动
             sudo systemctl restart wanxiang-v2
