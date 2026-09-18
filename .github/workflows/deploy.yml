@@ -56,9 +56,9 @@ jobs:
       - name: Assemble deploy bundle
         run: |
           rm -rf deploy-bundle
-          mkdir -p deploy-bundle
-          cp -rL apps/server/dist deploy-bundle/apps/server/dist
-          cp -rL apps/web/dist deploy-bundle/apps/web/dist
+          mkdir -p deploy-bundle/apps/server deploy-bundle/apps/web deploy-bundle/prisma
+          cp -rL apps/server/dist deploy-bundle/apps/server/
+          cp -rL apps/web/dist deploy-bundle/apps/web/
           cp -rL prisma deploy-bundle/prisma
           cp -rL node_modules deploy-bundle/node_modules
           echo "bundle size:" && du -sh deploy-bundle
