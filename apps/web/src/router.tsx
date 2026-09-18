@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useUi } from './store/ui';
 import { Login } from './pages/Login';
 import { Worlds } from './pages/Worlds';
+import { WorldDetail } from './pages/WorldDetail';
 import { Books } from './pages/Books';
 import { Characters } from './pages/Characters';
 import { Dashboard } from './pages/Dashboard';

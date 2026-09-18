@@ -7,6 +7,9 @@ import { UsersModule } from './users/users.module';
 import { WorldsModule } from './worlds/worlds.module';
 import { BooksModule } from './books/books.module';
 import { CharactersModule } from './characters/characters.module';
+import { EntitiesModule } from './entities/entities.module';
+import { RelationsModule } from './relations/relations.module';
+import { TimelineModule } from './timeline/timeline.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { CharactersModule } from './characters/characters.module';
     WorldsModule,
     BooksModule,
     CharactersModule,
+    EntitiesModule,
+    RelationsModule,
+    TimelineModule,
   ],
   controllers: [HealthController],
   providers: [],

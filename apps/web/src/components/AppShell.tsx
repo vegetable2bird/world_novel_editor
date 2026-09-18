@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setLocale = useUi((s) => s.setLocale);
   const user = useUi((s) => s.user);
   const loc = useLocation();
-  const crumb = CRUMB[loc.pathname] ?? '万象';
+  const crumb = loc.pathname.startsWith('/wanjie/') ? '世界观详情' : (CRUMB[loc.pathname] ?? '万象');
   const initial = (user?.displayName || user?.email || '林')?.slice(0, 1);
 
   let lastGroup = '';

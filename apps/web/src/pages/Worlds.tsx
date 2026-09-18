@@ -6,6 +6,7 @@ import type { World, CreateWorldInput } from '../api/types';
 
 export function Worlds() {
   const { t } = useTranslation();
+  const nav = useNavigate();
   const { data: worlds, isLoading, isError } = useWorlds();
   const create = useCreateWorld();
   const update = useUpdateWorld();

@@ -102,3 +102,58 @@ export interface UpdateInstanceInput {
   bio?: string;
   originWorldId?: string;
 }
+
+// ===== 世界观详情子数据（复用 WorldEntity / EntityRelation / TimelineEvent） =====
+export interface WorldEntity {
+  id: string;
+  userId: string;
+  worldId: string;
+  type: string; // faction|skill|geography|figure|item|map|rule|race…
+  name: string;
+  fields?: string | null; // 应用层 JSON 字符串
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EntityRelation {
+  id: string;
+  userId: string;
+  worldId: string;
+  sourceId: string;
+  targetId: string;
+  kind: string; // 敌对 | 同盟 | 附庸 | 中立 …
+  label?: string | null;
+  createdAt: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  userId: string;
+  worldId: string;
+  title: string;
+  at?: string | null;
+  description?: string | null;
+  createdAt: string;
+}
+
+export interface CreateEntityInput {
+  type: string;
+  name: string;
+  fields?: string;
+}
+export interface CreateRelationInput {
+  sourceId: string;
+  targetId: string;
+  kind: string;
+  label?: string;
+}
+export interface CreateTimelineInput {
+  title: string;
+  at?: string;
+  description?: string;
+}
+export interface UpdateTimelineInput {
+  title?: string;
+  at?: string;
+  description?: string;
+}
