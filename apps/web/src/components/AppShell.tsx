@@ -1,8 +1,8 @@
-import { Fragment, ReactNode } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../store/ui';
-import { toggleTheme } from '../theme';
+import { THEMES, setTheme, getTheme, type ThemeName } from '../theme';
 import i18n, { SUPPORTED_LOCALES } from '../i18n';
 
 type NavItem = { to: string; icon: string; key: string; group: string };
@@ -38,6 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = useUi((s) => s.user);
   const loc = useLocation();
   const crumb = loc.pathname.startsWith('/wanjie/') ? '世界观详情' : (CRUMB[loc.pathname] ?? '万象');
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [cur, setCur] = useState<ThemeName>(getTheme());
   const initial = (user?.displayName || user?.email || '林')?.slice(0, 1);
 
   let lastGroup = '';
@@ -79,9 +81,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="crumb">{crumb}</div>
           </div>
           <div className="spacer" />
-          <button className="ghost" onClick={() => toggleTheme()} title="主题">
+          <button className="theme-ic" onClick={() => setThemeOpen((v) => !v)} title="主题">
             🎨
           </button>
+          {themeOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 60 }} onClick={() => setThemeOpen(false)} />
+              <div className="theme-pop">
+                <div className="tp-title">主题预设</div>
+                <div className="theme-grid">
+                  {THEMES.map((tm) => (
+                    <button
+                      key={tm.name}
+                      className={'theme-dot' + (cur === tm.name ? ' sel' : '')}
+                      style={{ background: tm.swatch, borderColor: tm.border || 'transparent' }}
+                      title={tm.label}
+                      onClick={() => {
+                        setTheme(tm.name);
+                        setCur(tm.name);
+                        setThemeOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="theme-name">当前：{THEMES.find((x) => x.name === cur)?.label}</div>
+              </div>
+            </>
+          )}
           <select
             className="ghost"
             value={i18n.language}

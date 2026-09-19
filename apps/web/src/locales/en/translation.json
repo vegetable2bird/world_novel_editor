@@ -22,7 +22,8 @@
     "characters": "Characters",
     "console": "Console",
     "editor": "Editor",
-    "settings": "Settings"
+    "settings": "Settings",
+    "dashboard": "Dashboard"
   },
   "auth": {
     "login": "Sign In",
@@ -36,6 +37,7 @@
     "create": "Create",
     "save": "Save",
     "delete": "Delete",
+    "edit": "Edit",
     "jumpWanjie": "Go to Myriad Worlds"
   },
   "common": {
@@ -46,6 +48,20 @@
     "desc": "The macro-universe holding all worldviews and characters",
     "empty": "No world yet. Create one to start your story.",
     "newWorld": "New World"
+  },
+  "worlds": {
+    "title": "Myriad Worlds",
+    "desc": "The macro-universe holding all worldviews and characters",
+    "name": "Name",
+    "description": "Description",
+    "visibility": "Visibility",
+    "coverColor": "Cover Color",
+    "books": "Books",
+    "characters": "Characters",
+    "empty": "No world yet. Create one to start your story.",
+    "newWorld": "New World",
+    "create": "New World",
+    "edit": "Edit World"
   },
   "books": {
     "title": "Books",

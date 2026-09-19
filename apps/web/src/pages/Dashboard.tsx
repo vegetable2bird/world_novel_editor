@@ -5,12 +5,16 @@ import { useBooks } from '../hooks/useBooks';
 import { useCharacters } from '../hooks/useCharacters';
 import { useUi } from '../store/ui';
 
-const ACTIVITY = [
-  { ic: '世', t: '你创建了世界《霜与冠》', d: '作者动作 · 3 天前' },
-  { ic: '章', t: '你完成了《霜与冠》第 3 章', d: '作者动作 · 2 小时前' },
-  { ic: '模', t: '你导入了「西幻」世界模板', d: '作者动作 · 昨天' },
-  { ic: '角', t: '你向万界新增了「顾长亭」', d: '作者动作 · 昨天' },
-];
+function ago(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = 60000;
+  const hour = 60 * min;
+  const day = 24 * hour;
+  if (diff < hour) return Math.max(1, Math.floor(diff / min)) + ' 分钟前';
+  if (diff < day) return Math.floor(diff / hour) + ' 小时前';
+  if (diff < 30 * day) return Math.floor(diff / day) + ' 天前';
+  return new Date(iso).toLocaleDateString('zh-CN');
+}
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -21,24 +25,38 @@ export function Dashboard() {
   const { data: chars } = useCharacters();
 
   const name = user?.displayName || '林墨';
+  const totalWorlds = worlds?.length ?? 0;
+  const totalBooks = books?.length ?? 0;
+  const totalChars = chars?.length ?? 0;
+  const totalChapters = (books ?? []).reduce((s, b) => s + (b._count?.chapters ?? 0), 0);
+
+  const events = [
+    ...(worlds ?? []).map((w) => ({ ic: '世', t: `创建了世界《${w.name}》`, at: w.createdAt })),
+    ...(books ?? []).map((b) => ({ ic: '书', t: `新建了作品《${b.name}》`, at: b.createdAt })),
+    ...(chars ?? []).map((c) => ({ ic: '角', t: `向万界新增了「${c.name}」`, at: c.createdAt })),
+  ]
+    .sort((a, b) => +new Date(b.at) - +new Date(a.at))
+    .slice(0, 5);
+
+  const firstBook = books?.[0];
 
   return (
     <section>
-      <div className="eyebrow">工作台 · Dashboard</div>
+      <div className="eyebrow">工作台</div>
       <h1 className="title serif">欢迎回来，{name}</h1>
-      <p className="lede">下面是今天的进度与入口。（角色会在你的作品中参演，但角色的动态属于万界自身）</p>
+      <p className="lede">下面是你的创作概览与近期动态。（角色会在你的作品中参演，但角色的动态属于万界自身）</p>
 
       <div className="grid g3" style={{ marginBottom: 22 }}>
         <div className="card stat">
-          <span className="n">{worlds?.length ?? 0}</span>
+          <span className="n">{totalWorlds}</span>
           <span className="l">我的世界</span>
         </div>
         <div className="card stat">
-          <span className="n">{books?.length ?? 0}</span>
+          <span className="n">{totalBooks}</span>
           <span className="l">我的作品（创作中）</span>
         </div>
         <div className="card stat">
-          <span className="n">{chars?.length ?? 0}</span>
+          <span className="n">{totalChars}</span>
           <span className="l">万界活体角色</span>
         </div>
       </div>
@@ -54,36 +72,35 @@ export function Dashboard() {
         </button>
         <button className="qbtn" onClick={() => nav('/editor')}>
           <div className="qt">✍️ 继续写作</div>
-          <div className="qd">《霜与冠》第 4 章</div>
+          <div className="qd">{firstBook ? `《${firstBook.name}》` : '进入写作台'}</div>
         </button>
         <button className="qbtn" onClick={() => nav('/settings')}>
-          <div className="qt">⚙️ AI 模型</div>
-          <div className="qd">配置生成密钥</div>
+          <div className="qt">⚙️ 配置</div>
+          <div className="qd">主题与 AI 模型</div>
         </button>
       </div>
 
       <div className="card" style={{ marginBottom: 26 }}>
         <h3 className="section-h" style={{ marginTop: 0 }}>
-          写作习惯
+          创作概览
         </h3>
         <div className="grid g3">
           <div className="stat">
-            <span className="n">6</span>
-            <span className="l">连续写作天数 🔥</span>
+            <span className="n">{totalWorlds}</span>
+            <span className="l">世界总数</span>
           </div>
           <div className="stat">
-            <span className="n">860</span>
-            <span className="l">今日字数 / 目标 2000</span>
+            <span className="n">{totalBooks}</span>
+            <span className="l">作品总数</span>
           </div>
           <div className="stat">
-            <span className="n">33%</span>
-            <span className="l">《霜与冠》总进度</span>
+            <span className="n">{totalChapters}</span>
+            <span className="l">章节总数</span>
           </div>
         </div>
-        <div className="habit-bar">
-          <div style={{ width: '43%' }} />
-        </div>
-        <p className="small-note">小提示：保持每日落笔，连续 7 天可解锁「稳定创作」徽章；写作时右侧会显示出场角色的情绪，帮你把握戏感。</p>
+        <p className="small-note">
+          数据来自你的真实创作：世界、作品与章节计数实时同步。写作节奏、连续天数等习惯统计将在接入写作记录后呈现。
+        </p>
       </div>
 
       <h3 className="section-h">我的世界</h3>
@@ -98,7 +115,7 @@ export function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {worlds?.length === 0 && (
+            {totalWorlds === 0 && (
               <tr>
                 <td colSpan={4} className="empty">
                   还没有世界
@@ -106,7 +123,7 @@ export function Dashboard() {
               </tr>
             )}
             {worlds?.map((w) => (
-              <tr key={w.id} className="clickable" onClick={() => nav('/wanjie')}>
+              <tr key={w.id} className="clickable" onClick={() => nav('/wanjie/' + w.id)}>
                 <td>
                   <span className="dot" style={{ background: w.coverColor || 'var(--accent)' }} />
                   {w.name}
@@ -124,15 +141,19 @@ export function Dashboard() {
         <h3 className="section-h" style={{ marginTop: 0 }}>
           你的近期动态
         </h3>
-        {ACTIVITY.map((a, i) => (
-          <div className="rel" key={i}>
-            <div className="av">{a.ic}</div>
-            <div className="grow">
-              <div style={{ fontWeight: 600 }}>{a.t}</div>
-              <div className="rt">{a.d}</div>
+        {events.length === 0 ? (
+          <div className="dtable-empty">还没有动态，去创建一个世界开始你的创作吧。</div>
+        ) : (
+          events.map((a, i) => (
+            <div className="rel" key={i}>
+              <div className="av">{a.ic}</div>
+              <div className="grow">
+                <div style={{ fontWeight: 600 }}>{a.t}</div>
+                <div className="rt">{ago(a.at)}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
         <div className="footnote">注：角色的自身动态（情绪演进、相识经历等）属于万界自身，请进入「角色管理」查看。</div>
       </div>
     </section>

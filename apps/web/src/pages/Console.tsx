@@ -11,7 +11,7 @@ export function Console() {
   const { t } = useTranslation();
   return (
     <section>
-      <div className="eyebrow">AI 操作系统台 · Console</div>
+      <div className="eyebrow">AI 操作系统台</div>
       <h1 className="title serif">AI 操作系统台</h1>
       <p className="lede">把 AI 当作你世界的「副驾驶」：一键生成、检查一致性、给出剧情分支。</p>
       <div className="grid g3">
