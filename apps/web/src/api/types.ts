@@ -157,3 +157,40 @@ export interface UpdateTimelineInput {
   at?: string;
   description?: string;
 }
+
+// ===== 世界模板库 =====
+export interface WorldTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  coverColor?: string | null;
+  visibility: string; // private | public
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  content?: string | null; // 仅在按 id 获取时返回：{ entities, relations, timeline }
+}
+
+export interface CreateTemplateInput {
+  name: string;
+  description?: string;
+  coverColor?: string;
+  visibility?: string;
+  category?: string;
+  worldId?: string; // 服务端按此世界快照内容
+  content?: string;
+}
+
+export interface UpdateTemplateInput {
+  name?: string;
+  description?: string;
+  coverColor?: string;
+  visibility?: string;
+  category?: string;
+}
+
+export interface ForkTemplateResult {
+  worldId: string;
+  name: string;
+}

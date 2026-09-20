@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWorlds, useUpdateWorld } from '../hooks/useWorlds';
+import { useCreateTemplate } from '../hooks/useTemplates';
 import {
   useEntities,
   useCreateEntity,
@@ -77,6 +78,7 @@ export function WorldDetail() {
   const { data: worlds, isLoading: worldsLoading } = useWorlds();
   const world = worlds?.find((w) => w.id === worldId);
   const updateWorld = useUpdateWorld();
+  const createTpl = useCreateTemplate();
 
   const { data: entities, isLoading: entLoading } = useEntities(worldId);
   const { data: relations } = useRelations(worldId);
@@ -111,6 +113,14 @@ export function WorldDetail() {
   const [relModal, setRelModal] = useState<string | null>(null);
   const [introModal, setIntroModal] = useState(false);
   const [devModal, setDevModal] = useState(false);
+  const [saveTplOpen, setSaveTplOpen] = useState(false);
+  const [tplForm, setTplForm] = useState<{ name: string; description: string; coverColor: string; category: string; visibility: string }>({
+    name: '',
+    description: '',
+    coverColor: '#d4af37',
+    category: '',
+    visibility: 'private',
+  });
 
   // 地图
   const [map, setMap] = useState<FMap>({ w: 7, h: 5, terrain: Array(35).fill(0) });
@@ -274,6 +284,29 @@ export function WorldDetail() {
     else await createEntity.mutateAsync({ type: 'dev', name: '__dev__', fields });
     setDevModal(false);
   }
+  function openSaveTpl() {
+    if (!world) return;
+    setTplForm({
+      name: `${world.name} 模板`,
+      description: world.description ?? '',
+      coverColor: world.coverColor || '#d4af37',
+      category: '',
+      visibility: 'private',
+    });
+    setSaveTplOpen(true);
+  }
+  async function saveTpl() {
+    if (!world || !tplForm.name.trim()) return;
+    await createTpl.mutateAsync({
+      name: tplForm.name,
+      description: tplForm.description,
+      coverColor: tplForm.coverColor,
+      category: tplForm.category,
+      visibility: tplForm.visibility,
+      worldId: world.id,
+    });
+    setSaveTplOpen(false);
+  }
 
   if (worldsLoading) return <p className="muted">…</p>;
   if (!world) return <p className="muted">世界不存在 · <button className="link" onClick={() => nav('/wanjie')}>返回万界</button></p>;
@@ -298,6 +331,9 @@ export function WorldDetail() {
         <span className="crumb-sep">/</span>
         <span className="crumb-cur">{world.name}</span>
         <span className="crumb-tools">
+          <button className="mini-btn" onClick={openSaveTpl}>
+            💾 存为模板
+          </button>
           <button className="mini-btn" onClick={() => nav('/wanjie')}>
             🧭 跳转万界
           </button>
@@ -767,6 +803,34 @@ export function WorldDetail() {
               }}
             >
               保存
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {saveTplOpen && (
+        <Modal title="存为模板" onClose={() => setSaveTplOpen(false)}>
+          <Field label="模板名">
+            <input value={tplForm.name} onChange={(e) => setTplForm({ ...tplForm, name: e.target.value })} autoFocus />
+          </Field>
+          <Field label="简介">
+            <textarea value={tplForm.description} onChange={(e) => setTplForm({ ...tplForm, description: e.target.value })} />
+          </Field>
+          <Field label="分类">
+            <input value={tplForm.category} onChange={(e) => setTplForm({ ...tplForm, category: e.target.value })} placeholder="如：西幻 / 都市 / 废土" />
+          </Field>
+          <Field label="封面色">
+            <input value={tplForm.coverColor} onChange={(e) => setTplForm({ ...tplForm, coverColor: e.target.value })} placeholder="#d4af37" />
+          </Field>
+          <Field label="可见性">
+            <select value={tplForm.visibility} onChange={(e) => setTplForm({ ...tplForm, visibility: e.target.value })}>
+              <option value="private">private（仅自己）</option>
+              <option value="public">public（他人可套用）</option>
+            </select>
+          </Field>
+          <div className="modal-actions">
+            <button className="primary" onClick={saveTpl} disabled={createTpl.isPending}>
+              {t('actions.save')}
             </button>
           </div>
         </Modal>

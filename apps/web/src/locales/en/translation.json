@@ -23,7 +23,8 @@
     "console": "Console",
     "editor": "Editor",
     "settings": "Settings",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "templates": "Templates"
   },
   "auth": {
     "login": "Sign In",
@@ -98,5 +99,29 @@
     "newNative": "New Native Character",
     "create": "Create",
     "edit": "Edit"
+  },
+  "templates": {
+    "title": "Templates",
+    "desc": "Save a polished world as a template, or fork a public template to cold-start a new world",
+    "mine": "Mine",
+    "public": "Public",
+    "private": "Private",
+    "author": "Author",
+    "empty": "No templates yet. Save a world as a template, or browse public ones.",
+    "emptyPublic": "The public template library is empty.",
+    "newTemplate": "New Template",
+    "fork": "Fork as World",
+    "name": "Template Name",
+    "description": "Description",
+    "category": "Category",
+    "coverColor": "Cover Color",
+    "visibility": "Visibility",
+    "confirmDelete": "Confirm delete",
+    "makePrivate": "Make Private",
+    "makePublic": "Make Public",
+    "blankWorld": "Blank World",
+    "blankWorldDesc": "Start from scratch — build continents, factions and skills yourself",
+    "fromTemplate": "From Template",
+    "fromTemplateDesc": "Reuse a mature framework to cold-start faster"
   }
 }

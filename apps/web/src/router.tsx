@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Editor } from './pages/Editor';
 import { Console } from './pages/Console';
 import { Settings } from './pages/Settings';
+import { Templates } from './pages/Templates';
 import { AppShell } from './components/AppShell';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,8 @@ export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   { path: '/dashboard', element: shell(<Dashboard />) },
   { path: '/wanjie', element: shell(<Worlds />) },
+  { path: '/wanjie/:worldId', element: shell(<WorldDetail />) },
+  { path: '/templates', element: shell(<Templates />) },
   { path: '/books', element: shell(<Books />) },
   { path: '/characters', element: shell(<Characters />) },
   { path: '/editor', element: shell(<Editor />) },

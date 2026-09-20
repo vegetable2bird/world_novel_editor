@@ -23,7 +23,8 @@
     "console": "操作台",
     "editor": "写作台",
     "settings": "设置",
-    "dashboard": "工作台"
+    "dashboard": "工作台",
+    "templates": "模板库"
   },
   "auth": {
     "login": "登录",
@@ -84,5 +85,29 @@
     "newNative": "新建本作原生",
     "create": "新建",
     "edit": "编辑"
+  },
+  "templates": {
+    "title": "模板库",
+    "desc": "把打磨好的世界存为模板，或套用他人公开模板冷启动新世界",
+    "mine": "我的",
+    "public": "公开",
+    "private": "私有",
+    "author": "作者",
+    "empty": "还没有模板。把一个世界存为模板，或浏览公开模板。",
+    "emptyPublic": "公开模板库还是空的。",
+    "newTemplate": "新建模板",
+    "fork": "用模板新建",
+    "name": "模板名",
+    "description": "简介",
+    "category": "分类",
+    "coverColor": "封面色",
+    "visibility": "可见性",
+    "confirmDelete": "确认删除",
+    "makePrivate": "转为私有",
+    "makePublic": "转为公开",
+    "blankWorld": "空白世界",
+    "blankWorldDesc": "从零开始，自己搭建大陆、势力与技能",
+    "fromTemplate": "从模板新建",
+    "fromTemplateDesc": "套用成熟框架，冷启动更快"
   }
 }

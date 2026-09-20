@@ -279,3 +279,23 @@ model RefreshToken {
 
   @@index([userId])
 }
+
+// 世界模板库：用户可把自己的世界存为模板，或复用他人公开模板冷启动新世界。
+// content 用 String 存序列化 JSON（SQLite 不支持 Json 类型）：{ name, description, coverColor,
+//   category, entities:[{type,name,fields}], relations:[{sourceIdx,targetIdx,kind,label}], timeline:[{at,title,description}] }
+// 多租户：列表 = ownerId==me OR visibility=='public'。
+model WorldTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  coverColor  String?
+  visibility  String   @default("private") // private | public
+  category    String?
+  content     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([visibility])
+}

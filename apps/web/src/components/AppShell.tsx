@@ -9,6 +9,7 @@ type NavItem = { to: string; icon: string; key: string; group: string };
 const NAV: NavItem[] = [
   { to: '/dashboard', icon: '▦', key: 'dashboard', group: 'main' },
   { to: '/wanjie', icon: '🌐', key: 'wanjie', group: 'create' },
+  { to: '/templates', icon: '📐', key: 'templates', group: 'create' },
   { to: '/books', icon: '📚', key: 'books', group: 'create' },
   { to: '/characters', icon: '🧬', key: 'characters', group: 'create' },
   { to: '/editor', icon: '✍️', key: 'editor', group: 'create' },
@@ -24,6 +25,7 @@ const GROUP_LABELS: Record<string, string> = {
 const CRUMB: Record<string, string> = {
   '/dashboard': '工作台',
   '/wanjie': '世界观管理',
+  '/templates': '模板库',
   '/books': '书籍管理',
   '/characters': '角色管理',
   '/editor': '写作',
