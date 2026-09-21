@@ -2,7 +2,10 @@
 // 约定：所有业务表带 userId，后端查询强制 where userId = ctx.user.id 做隔离。
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // CI/服务器为 Linux（debian-openssl-3.0.x），本地多为 Windows/Mac；
+  // 双 target 让「本地构建产物包」可直接在服务器运行
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
