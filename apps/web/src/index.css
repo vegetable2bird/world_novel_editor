@@ -36,15 +36,34 @@ body {
 .login-canvas {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   pointer-events: none;
 }
 /* 翅膀画布：位于墨流之上、暗角之下 */
+/* 画布是替换元素，仅靠 inset 不会拉伸，必须显式 100% */
 .wings-canvas {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 2;
   pointer-events: none;
+}
+/* 凤凰模式的粉紫薄荷天空（对齐 noomo 气质） */
+.login-view.phoenix-mode {
+  background: linear-gradient(
+    178deg,
+    #f3dcf1 0%,
+    #e3d7f8 34%,
+    #d9d5f7 58%,
+    #cfe3f2 82%,
+    #d2efe4 100%
+  );
+}
+.login-view.phoenix-mode .login-vignette {
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(120, 100, 180, 0.1) 100%);
 }
 .login-vignette {
   position: fixed;
@@ -58,10 +77,16 @@ body {
     color-mix(in srgb, var(--ink) 26%, transparent) 100%
   );
 }
+/* 登录成功过场：内容淡出上浮，凤凰天翔 */
 .login-inner {
   position: relative;
   z-index: 4;
   width: 100%;
+  transition: opacity 0.85s ease, transform 0.85s ease;
+}
+.login-inner.flying {
+  opacity: 0;
+  transform: translateY(-26px);
 }
 /* 品牌区：大衬线标题 + 字距拉开的眉题（致敬 noomo 叙事站） */
 .login-hero {

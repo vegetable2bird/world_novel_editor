@@ -19,6 +19,7 @@ export function Login() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [flying, setFlying] = useState(false); // 登录成功：凤凰飞起过场中
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
@@ -206,7 +207,13 @@ export function Login() {
           : { email, password, displayName: displayName || undefined };
       const res = await api.post<{ accessToken: string; user: any }>(path, body);
       setAuth(res.accessToken, res.user);
-      navigate('/dashboard');
+      if (renderMode === 'phoenix') {
+        // 凤凰飞起过场后再进入应用
+        setFlying(true);
+        window.setTimeout(() => navigate('/dashboard'), 1080);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err?.message || t('auth.login') + ' failed');
     } finally {
@@ -215,16 +222,19 @@ export function Login() {
   }
 
   return (
-    <div className="login-view" ref={viewRef}>
+    <div
+      className={'login-view' + (renderMode === 'phoenix' ? ' phoenix-mode' : '')}
+      ref={viewRef}
+    >
       {renderMode === 'flow' ? (
         <canvas ref={canvasRef} className="login-canvas" />
       ) : (
         <canvas ref={canvasRef} className="login-canvas" style={{ display: 'none' }} />
       )}
       {renderMode === 'wings' && <Wings />}
-      {renderMode === 'phoenix' && <Phoenix />}
+      {renderMode === 'phoenix' && <Phoenix flyAway={flying} />}
       <div className="login-vignette" />
-      <div className="login-inner">
+      <div className={'login-inner' + (flying ? ' flying' : '')}>
         <div className="login-hero">
           <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
           <h1 className="login-brand">万象</h1>
@@ -266,7 +276,7 @@ export function Login() {
               {mode === 'login' ? t('auth.login') : t('auth.register')}
             </button>
           </form>
-          <div className="hint">支持邮箱注册与登录 · 背景墨流随主题变化</div>
+          <div className="hint">支持邮箱注册与登录 · 外观可在设置页自由定制</div>
         </div>
       </div>
     </div>

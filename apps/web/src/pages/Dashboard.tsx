@@ -4,7 +4,7 @@ import { useWorlds } from '../hooks/useWorlds';
 import { useBooks } from '../hooks/useBooks';
 import { useCharacters } from '../hooks/useCharacters';
 import { useUi } from '../store/ui';
-import { Wings } from '../components/Wings';
+import { Phoenix } from '../components/Phoenix';
 
 function ago(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -44,7 +44,7 @@ export function Dashboard() {
   return (
     <section>
       <div className="hero-wing">
-        <Wings compact />
+        <Phoenix compact />
         <div className="hero-inner">
           <div className="eyebrow">工作台</div>
           <h1 className="title serif">欢迎回来，{name}</h1>

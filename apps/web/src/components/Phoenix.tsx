@@ -3,12 +3,17 @@ import { useEffect, useRef } from 'react';
 type RGB = [number, number, number];
 
 /**
- * 琉璃凤凰主视觉：AI 生成的透明底水晶凤凰 PNG，
- * Canvas 加持身：呼吸浮动、背光光晕脉动、流光扫过羽面、晶莹浮尘。
+ * 琉璃凤凰主视觉：AI 生成的透明底水晶凤凰 PNG，Canvas 加持身：
+ * - 翱翔漂移（缓慢八字游弋）+ 扇翅呼吸 + 背光光晕脉动 + 流光扫羽 + 晶莹浮尘
+ * - flyAway：登录成功后天翔飞起、放大淡出（页面过场）
+ * - compact：Dashboard 横幅形态，挂载时自左侧滑翔入场
  * 光色取自主题 CSS 变量，随色盘自定义即时重染。
  */
-export function Phoenix({ compact = false }: { compact?: boolean }) {
+export function Phoenix({ compact = false, flyAway = false }: { compact?: boolean; flyAway?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const flyRef = useRef(0); // 飞行动画起始时间戳（0=未开始）
+  const flyFlag = useRef(flyAway);
+  flyFlag.current = flyAway;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -84,66 +89,86 @@ export function Phoenix({ compact = false }: { compact?: boolean }) {
     };
 
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = performance.now();
 
-    const draw = (t: number) => {
+    const draw = (now: number) => {
+      const t = (now - start) / 1000;
       ctx.clearRect(0, 0, W, H);
       const u = compact ? Math.min(W, H * 3) : Math.min(W, H);
-      const cx = W / 2;
-      const cy = compact ? H * 0.56 : H * 0.4;
+      const cx0 = W / 2;
+      const cy0 = compact ? H * 0.56 : H * 0.4;
       const { accent, accent2 } = pal;
 
-      // 呼吸参数
+      // 飞走过场进度 0..1（1.15s，smoothstep）
+      if (flyFlag.current && !flyRef.current) flyRef.current = t;
+      const fp = flyRef.current ? Math.min(1, (t - flyRef.current) / 1.15) : 0;
+      const fly = fp * fp * (3 - 2 * fp);
+
+      // 横幅滑翔入场进度
+      let enter = 1;
+      if (compact) {
+        const ep = Math.min(1, t / 1.5);
+        enter = ep * ep * (3 - 2 * ep);
+      }
+
+      // 翱翔漂移 + 扇翅
+      const soarX = (Math.sin(t * 0.22) * W * 0.02 - (1 - enter) * W * 0.34) * (1 - fly);
+      const soarY = (Math.cos(t * 0.17) * H * 0.012 - fly * H * 0.42) + Math.sin(t * 0.55) * u * 0.006;
+      const flap = Math.sin(t * 2.0) * 0.018 * (1 - fly); // 扇翅
       const breath = Math.sin(t * 0.55);
-      const scale = 1 + breath * 0.008;
-      const bobY = breath * u * 0.006;
-      // 流光位置：一道高光带周期性扫过全身
-      const sweep = ((t * 0.11) % 1.6) - 0.3; // -0.3 ~ 1.3
+      const rot = Math.sin(t * 0.22) * 0.022 - fly * 0.28;
+      const alpha = (1 - fly) * (0.35 + 0.65 * enter);
+      const scaleUp = (1 + fly * 0.85) * (1 + breath * 0.006);
+      const cx = cx0 + soarX;
+      const cy = cy0 + soarY;
 
       // 背光光晕（太阳）
-      const sunR = u * (compact ? 0.3 : 0.34) * (1 + breath * 0.03);
+      const sunR = u * (compact ? 0.3 : 0.34) * (1 + breath * 0.03) * (1 + fly * 0.5);
       const sun = ctx.createRadialGradient(cx, cy, 0, cx, cy, sunR);
-      sun.addColorStop(0, css(WHITE, 0.85));
-      sun.addColorStop(0.25, css(mix(WHITE, accent2, 0.25), 0.5));
-      sun.addColorStop(0.6, css(mix(WHITE, accent2, 0.45), 0.16));
+      sun.addColorStop(0, css(WHITE, 0.85 * alpha));
+      sun.addColorStop(0.25, css(mix(WHITE, accent2, 0.25), 0.5 * alpha));
+      sun.addColorStop(0.6, css(mix(WHITE, accent2, 0.45), 0.16 * alpha));
       sun.addColorStop(1, css(accent2, 0));
       ctx.fillStyle = sun;
       ctx.fillRect(cx - sunR, cy - sunR, sunR * 2, sunR * 2);
 
-      if (loaded) {
-        // 凤凰主体（等比缩放，完整入画）
+      if (loaded && alpha > 0.01) {
         const iw = img.width;
         const ih = img.height;
-        const drawW = Math.min(W * (compact ? 0.86 : 0.92), u * 1.55) * scale;
-        const drawH = (drawW * ih) / iw;
-        const dx = cx - drawW / 2;
-        const dy = cy - drawH * 0.52 + bobY;
-
-        ctx.drawImage(img, dx, dy, drawW, drawH);
+        const drawW = Math.min(W * (compact ? 0.86 : 0.92), u * 1.55) * scaleUp;
+        const drawH = drawW * (ih / iw) * (1 + flap); // 扇翅：纵向呼吸
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.globalAlpha = Math.min(1, alpha);
+        ctx.drawImage(img, -drawW / 2, -drawH * 0.52, drawW, drawH);
+        ctx.globalAlpha = 1;
 
         // 流光扫过：斜向亮带，仅落在凤凰不透明区域
-        if (!reduced && sweep > -0.05 && sweep < 1.05) {
-          ctx.save();
+        const sweep = ((t * 0.11) % 1.6) - 0.3;
+        if (!reduced && sweep > -0.05 && sweep < 1.05 && fly === 0) {
           ctx.globalCompositeOperation = 'source-atop';
-          const bandX = dx + drawW * sweep;
+          const bandX = -drawW / 2 + drawW * sweep;
           const band = ctx.createLinearGradient(bandX - drawW * 0.1, 0, bandX + drawW * 0.1, 0);
           band.addColorStop(0, css(WHITE, 0));
           band.addColorStop(0.5, css(WHITE, 0.5));
           band.addColorStop(1, css(WHITE, 0));
           ctx.fillStyle = band;
-          ctx.fillRect(bandX - drawW * 0.1, dy, drawW * 0.2, drawH);
-          ctx.restore();
+          ctx.fillRect(bandX - drawW * 0.1, -drawH, drawW * 0.2, drawH * 2);
+          ctx.globalCompositeOperation = 'source-over';
         }
+        ctx.restore();
       }
 
       // 晶莹浮尘
       for (const p of parts) {
         p.x += p.vx + Math.sin(t * 0.6 + p.ph) * 0.08;
-        p.y += p.vy;
+        p.y += p.vy - fly * 1.2;
         if (p.y < -6 || p.x < -6 || p.x > W + 6) {
           p.x = Math.random() * W;
           p.y = H + 6;
         }
-        const a = 0.18 + 0.4 * Math.abs(Math.sin(t * p.tw + p.ph));
+        const a = (0.18 + 0.4 * Math.abs(Math.sin(t * p.tw + p.ph))) * alpha;
         const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
         g.addColorStop(0, css(mix(WHITE, accent2, 0.3), a));
         g.addColorStop(1, css(accent2, 0));
@@ -155,9 +180,8 @@ export function Phoenix({ compact = false }: { compact?: boolean }) {
     };
 
     let raf = 0;
-    let start = performance.now();
     const frame = (now: number) => {
-      draw((now - start) / 1000);
+      draw(now);
       raf = requestAnimationFrame(frame);
     };
 
@@ -165,7 +189,7 @@ export function Phoenix({ compact = false }: { compact?: boolean }) {
     resize();
     initParts();
     if (reduced) {
-      draw(0.6);
+      draw(start + 600);
     } else {
       raf = requestAnimationFrame(frame);
     }
@@ -173,11 +197,11 @@ export function Phoenix({ compact = false }: { compact?: boolean }) {
     const onResize = () => {
       resize();
       initParts();
-      if (reduced) draw(0.6);
+      if (reduced) draw(start + 600);
     };
     const onTheme = () => {
       rebuildPalette();
-      if (reduced) draw(0.6);
+      if (reduced) draw(start + 600);
     };
     window.addEventListener('resize', onResize);
     const mo = new MutationObserver(onTheme);
