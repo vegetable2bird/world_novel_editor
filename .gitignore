@@ -9,3 +9,11 @@ coverage/
 *.tsbuildinfo
 .idea/
 .vscode/
+
+# 本地临时文件（部署/调试产物，勿入库）
+/_*.py
+/_*.js
+/_shots/
+/db-seed/
+/*.tgz
+/apps/web/*.tgz

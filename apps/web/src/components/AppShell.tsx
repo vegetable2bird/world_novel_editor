@@ -44,6 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const crumb = loc.pathname.startsWith('/wanjie/') ? '世界观详情' : (CRUMB[loc.pathname] ?? '万象');
   const [themeOpen, setThemeOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [cur, setCur] = useState<ThemeName>(getTheme());
   const [accent, setAccent] = useState<string>(getAccent() || DEFAULT_ACCENT);
@@ -92,14 +93,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button className="nav-toggle" onClick={() => setNavOpen((v) => !v)} title="菜单">
             ☰
           </button>
-          <div className="brand-mini">
-            <span className="seal">象</span> 万象
-          </div>
           <div className="crumb-box">
             <div className="crumb">{crumb}</div>
           </div>
           <div className="spacer" />
-          <button className="theme-ic" onClick={() => setThemeOpen((v) => !v)} title="主题">
+          <button
+            className="theme-ic"
+            onClick={() => {
+              setThemeOpen((v) => !v);
+              setUserOpen(false);
+            }}
+            title="主题色"
+          >
             🎨
           </button>
           {themeOpen && (
@@ -141,9 +146,36 @@ export function AppShell({ children }: { children: ReactNode }) {
               </option>
             ))}
           </select>
-          <button className="avatar-btn" title={user?.displayName || user?.email || ''}>
-            {initial}
-          </button>
+          <div className="user-cluster">
+            <button
+              className="avatar-btn"
+              title={user?.displayName || user?.email || ''}
+              onClick={() => {
+                setUserOpen((v) => !v);
+                setThemeOpen(false);
+              }}
+            >
+              {initial}
+            </button>
+            {userOpen && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 60 }} onClick={() => setUserOpen(false)} />
+                <div className="user-pop">
+                  <div className="up-name">{user?.displayName || '创作者'}</div>
+                  <div className="up-mail">{user?.email || ''}</div>
+                  <button
+                    className="up-logout"
+                    onClick={() => {
+                      setUserOpen(false);
+                      clearAuth();
+                    }}
+                  >
+                    ⎋ {t('auth.logout')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button className="ghost logout-btn" onClick={() => clearAuth()}>
             {t('auth.logout')}
           </button>

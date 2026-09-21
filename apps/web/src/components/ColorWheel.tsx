@@ -49,6 +49,18 @@ const hslToHex = ([h, s, l]: HSL): string => {
 const SIZE = 156;
 const R = SIZE / 2 - 8;
 
+/** 精选主题色（点击直接套用） */
+const PRESETS = [
+  { hex: '#6d4fd0', name: '丁香紫' },
+  { hex: '#8f4fa8', name: '青莲' },
+  { hex: '#c2497d', name: '绛粉' },
+  { hex: '#b3382e', name: '朱砂' },
+  { hex: '#b97a1e', name: '赭金' },
+  { hex: '#2f8f5f', name: '松绿' },
+  { hex: '#2f6f9f', name: '黛蓝' },
+  { hex: '#3b3b6b', name: '墨青' },
+];
+
 /** HSL 色盘：角度=色相，半径=饱和度，下方滑杆调明度。实时预览回调。 */
 export function ColorWheel({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -65,7 +77,7 @@ export function ColorWheel({ value, onChange }: { value: string; onChange: (hex:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // 绘制色盘
+  // 绘制色盘（离屏 1x 绘制 → 高清屏缩放贴图，避免 putImageData 忽略变换导致的错位）
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -75,9 +87,15 @@ export function ColorWheel({ value, onChange }: { value: string; onChange: (hex:
     canvas.width = SIZE * dpr;
     canvas.height = SIZE * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const off = document.createElement('canvas');
+    off.width = SIZE;
+    off.height = SIZE;
+    const octx = off.getContext('2d');
+    if (!octx) return;
     const cx = SIZE / 2;
     const cy = SIZE / 2;
-    const img = ctx.createImageData(SIZE * dpr, SIZE * dpr);
+    const img = octx.createImageData(SIZE, SIZE);
     const buf = new Uint32Array(img.data.buffer);
     const L = 58; // 固定中等明度绘制盘面，实际明度由滑杆决定
     for (let y = 0; y < SIZE; y++) {
@@ -95,8 +113,9 @@ export function ColorWheel({ value, onChange }: { value: string; onChange: (hex:
         buf[i] = (255 << 24) | parseInt(hslToHex([Math.round(hue), Math.round(sat), L]).slice(1), 16);
       }
     }
-    ctx.putImageData(img, 0, 0);
-    ctx.scale(1 / 1, 1 / 1);
+    octx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.drawImage(off, 0, 0, SIZE, SIZE);
 
     // 当前选点标记
     const [h, s] = hsl;
@@ -163,6 +182,22 @@ export function ColorWheel({ value, onChange }: { value: string; onChange: (hex:
           }}
         />
         <span className="cw-chip" style={{ background: value }} />
+      </div>
+      <div className="cw-presets">
+        {PRESETS.map((p) => (
+          <button
+            key={p.hex}
+            className={'cw-dot' + (value.toLowerCase() === p.hex ? ' sel' : '')}
+            style={{ background: p.hex }}
+            title={p.name}
+            onClick={() => {
+              const [h, s, l] = hexToHsl(p.hex);
+              const next: HSL = [h, Math.max(35, s), Math.min(72, Math.max(28, l))];
+              setHsl(next);
+              onChange(hslToHex(next));
+            }}
+          />
+        ))}
       </div>
     </div>
   );
