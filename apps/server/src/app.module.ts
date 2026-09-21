@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { WorldsModule } from './worlds/worlds.module';
 import { BooksModule } from './books/books.module';
+import { ChaptersModule } from './chapters/chapters.module';
 import { CharactersModule } from './characters/characters.module';
 import { EntitiesModule } from './entities/entities.module';
 import { RelationsModule } from './relations/relations.module';
@@ -20,6 +21,7 @@ import { TemplatesModule } from './templates/templates.module';
     UsersModule,
     WorldsModule,
     BooksModule,
+    ChaptersModule,
     CharactersModule,
     EntitiesModule,
     RelationsModule,

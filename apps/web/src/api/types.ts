@@ -23,6 +23,34 @@ export interface Book {
   _count?: { chapters: number; instances: number };
 }
 
+/** 章节列表项（含 v1 正文字数与片段预览） */
+export interface ChapterListItem {
+  id: string;
+  bookId: string;
+  title: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  charCount: number;
+  snippet: string;
+}
+
+/** 章节详情（含正文） */
+export interface Chapter extends Omit<ChapterListItem, 'charCount' | 'snippet'> {
+  userId: string;
+  content: string;
+}
+
+export interface CreateChapterInput {
+  title: string;
+  content?: string;
+}
+
+export interface UpdateChapterInput {
+  title?: string;
+  content?: string;
+}
+
 export interface Character {
   id: string;
   name: string;

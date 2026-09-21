@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useWorlds } from '../hooks/useWorlds';
 import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '../hooks/useBooks';
 import { Modal, Field } from '../components/Modal';
@@ -7,6 +8,7 @@ import type { Book, CreateBookInput } from '../api/types';
 
 export function Books() {
   const { t } = useTranslation();
+  const nav = useNavigate();
   const { data: worlds } = useWorlds();
   const [worldId, setWorldId] = useState<string>('');
   const { data: books, isLoading, isError } = useBooks(worldId || undefined);
@@ -115,6 +117,9 @@ export function Books() {
                 <td>{b._count?.chapters ?? 0}</td>
                 <td>{b._count?.instances ?? 0}</td>
                 <td className="col-actions">
+                  <button className="link" onClick={() => nav(`/editor?book=${b.id}`)}>
+                    ✍ 写作
+                  </button>
                   <button className="link" onClick={() => openEdit(b)}>
                     {t('actions.edit')}
                   </button>

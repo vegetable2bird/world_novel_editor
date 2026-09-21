@@ -667,7 +667,136 @@ textarea {
   margin: 12px 0 14px;
 }
 
-/* ===== Dashboard / 通用卡片 ===== */
+/* ===== 写作台（编辑排版式：章节列表 + 沉浸正文） ===== */
+.editor-page {
+  margin: -8px 0 0;
+}
+.editor-split {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 34px;
+  align-items: start;
+}
+.ed-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+}
+.ed-book-name {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  padding: 2px 0;
+}
+.ed-chap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+}
+.ed-chap-item {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.ed-chap-item:hover {
+  background: var(--surface);
+}
+.ed-chap-item.active {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.ed-chap-t {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+.ed-chap-del {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.ed-chap-item:hover .ed-chap-del {
+  opacity: 1;
+}
+.ed-chap-del:hover {
+  color: var(--seal);
+}
+.ed-chap-m {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.ed-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ed-title {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 0;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 26px;
+  letter-spacing: 0.05em;
+  padding: 6px 2px 12px;
+  color: var(--ink);
+}
+.ed-title:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+.ed-body {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 17px;
+  line-height: 2.1;
+  letter-spacing: 0.03em;
+  min-height: 52vh;
+  resize: vertical;
+  color: var(--ink);
+  padding: 4px 2px;
+}
+.ed-body:focus {
+  outline: none;
+}
+.ed-body::placeholder,
+.ed-title::placeholder {
+  color: color-mix(in srgb, var(--muted) 65%, transparent);
+}
+.ed-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  padding-top: 10px;
+}
+@media (max-width: 900px) {
+  .editor-split {
+    grid-template-columns: 1fr;
+  }
+  .ed-chap-list {
+    max-height: 220px;
+  }
+}
+
+/* ===== 通用卡片 ===== */
 .eyebrow {
   color: var(--muted);
   font-size: 12px;
@@ -1441,4 +1570,82 @@ textarea {
   .login-brand {
     text-shadow: none;
   }
+}
+
+
+/* ===== 编辑排版式统一覆盖层（全站高级感收敛） ===== */
+/* 页面标题：宋体细字重 + 细分隔线，与登录页同源 */
+.page-head h2 {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px;
+}
+.page-head h2::after {
+  content: '';
+  display: block;
+  width: 34px;
+  height: 1px;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  margin-top: 10px;
+}
+.page-head .muted {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+/* 主按钮：胶囊描边，克制用色 */
+.primary {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 999px;
+  padding: 9px 24px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  font-size: 13px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+/* 次级按钮：圆角收敛 */
+.ghost,
+.mini-btn {
+  border-radius: 999px;
+  font-size: 13px;
+}
+/* 卡片更轻：大圆角、浅边框、去厚重感 */
+.card {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+}
+.qbtn,
+.nw-card {
+  border-radius: 14px;
+}
+/* 表格：表头字距拉开、字重放缓 */
+.dtable thead th {
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+/* 应用壳：顶栏与侧栏透明化，让背景呼吸 */
+.topbar {
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.sidebar {
+  background: transparent;
+  border-right: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+/* 统计数字：宋体大数字更有编辑感 */
+.stat .n {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-weight: 400;
+  font-size: 30px;
+}
+/* 区块标题更轻 */
+.section-h {
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
