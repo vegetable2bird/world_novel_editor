@@ -396,7 +396,7 @@ export function WorldDetail() {
               ✎ 编辑简介
             </button>
           </div>
-          <div className="footnote">世界观编辑页为原型示意：大陆地图、势力组织、技能发展均为可交互模块，已与后端存储打通。</div>
+          <div className="footnote">大陆地图、势力组织、技能发展均为可交互模块，编辑即时落盘到你的万界。</div>
         </div>
       )}
 
@@ -497,7 +497,7 @@ export function WorldDetail() {
                           <b>{f.name}</b>
                         </td>
                         <td><span className="pill">{ff.kind || '—'}</span></td>
-                        <td className="muted" style={{ maxWidth: 300 }}>{ff.desc}</td>
+                        <td className="muted wrap" style={{ maxWidth: 300 }}>{ff.desc}</td>
                         <td>{(facRelChips(f.id) as React.ReactNode) || <span className="muted">—</span>}</td>
                         <td className="col-act">
                           <button className="mini-btn" onClick={() => openFac(f.id)}>编辑</button>

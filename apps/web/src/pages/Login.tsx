@@ -253,7 +253,7 @@ export function Login() {
               {mode === 'login' ? t('auth.login') : t('auth.register')}
             </button>
           </form>
-          <div className="hint">支持邮箱 / 微信 / GitHub 登录（原型示意）· 背景墨流随主题变化</div>
+          <div className="hint">支持邮箱注册与登录 · 背景墨流随主题变化</div>
         </div>
       </div>
     </div>

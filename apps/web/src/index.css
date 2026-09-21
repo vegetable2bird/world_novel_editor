@@ -211,6 +211,39 @@ body {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  flex-wrap: nowrap;
+}
+/* 顶栏按钮/文字一律不换行 */
+.topbar button,
+.topbar select,
+.topbar .crumb,
+.topbar .brand-mini {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.nav-scrim {
+  display: none;
+}
+.side-close {
+  display: none;
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
 }
 .spacer {
   flex: 1;
@@ -239,15 +272,16 @@ body {
   margin: 0 auto;
 }
 
-/* 高级表格（占位骨架，Phase 4 接 API 后填充数据） */
+/* 高级表格：容器横向滚动，窄屏不挤压 */
 .dtable-wrap {
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   margin-top: 16px;
 }
 .dtable {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
 }
 .dtable th,
@@ -255,6 +289,11 @@ body {
   text-align: left;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.dtable td.wrap,
+.dtable th.wrap {
+  white-space: normal;
 }
 .dtable thead th {
   position: sticky;
@@ -266,6 +305,7 @@ body {
 .dtable .empty {
   color: var(--muted);
   text-align: center;
+  white-space: normal;
 }
 
 /* 应用布局 */
@@ -302,11 +342,6 @@ body {
   background: var(--bg);
   color: var(--accent);
   font-weight: 600;
-}
-.side-foot {
-  margin-top: auto;
-  color: var(--muted);
-  font-size: 12px;
 }
 .main-col {
   display: flex;
@@ -1008,4 +1043,129 @@ textarea {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 1100px) {
+  .content {
+    max-width: 100%;
+  }
+  .grid.g3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .quick {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .grid.g3,
+  .quick {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 手机/窄屏：侧栏变抽屉，可收起 */
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 250px;
+    z-index: 90;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  }
+  .app-shell.nav-open .sidebar {
+    transform: translateX(0);
+  }
+  .nav-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .app-shell.nav-open .nav-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .nav-toggle {
+    display: inline-grid;
+    place-items: center;
+  }
+  .side-close {
+    display: block;
+  }
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .topbar .brand-mini {
+    display: none;
+  }
+  .topbar .crumb-box {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .topbar .crumb {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .topbar .spacer {
+    display: none;
+  }
+  .content {
+    padding: 16px 12px;
+  }
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .page-head .primary {
+    margin-top: 0;
+    width: 100%;
+  }
+  .nw-opt {
+    grid-template-columns: 1fr;
+  }
+  .tpl-grid {
+    grid-template-columns: 1fr;
+  }
+  .tl-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .modal.wide {
+    width: calc(100vw - 24px);
+  }
+  .dtable {
+    min-width: 560px;
+  }
+}
+
+/* 手机极窄：顶栏只留必要元素，退出登录收成图标宽度 */
+@media (max-width: 420px) {
+  .topbar {
+    gap: 6px;
+  }
+  .logout-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .lang-select {
+    max-width: 84px;
+  }
 }

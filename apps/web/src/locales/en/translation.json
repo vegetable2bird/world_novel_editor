@@ -48,7 +48,13 @@
     "title": "Myriad Worlds",
     "desc": "The macro-universe holding all worldviews and characters",
     "empty": "No world yet. Create one to start your story.",
-    "newWorld": "New World"
+    "newWorld": "New World",
+    "create": "New World",
+    "edit": "Edit World",
+    "name": "Name",
+    "description": "Description",
+    "visibility": "Visibility",
+    "coverColor": "Cover Color"
   },
   "worlds": {
     "title": "Myriad Worlds",

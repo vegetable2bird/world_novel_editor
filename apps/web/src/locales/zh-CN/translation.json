@@ -48,7 +48,13 @@
     "title": "万界",
     "desc": "容纳所有世界观与角色的宏观宇宙",
     "empty": "还没有世界，创建一个开始你的创作。",
-    "newWorld": "新建世界"
+    "newWorld": "新建世界",
+    "create": "新建世界",
+    "edit": "编辑世界",
+    "name": "名称",
+    "description": "简介",
+    "visibility": "可见性",
+    "coverColor": "封面色"
   },
   "books": {
     "title": "书籍",

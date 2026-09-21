@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../store/ui';
@@ -41,8 +41,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const crumb = loc.pathname.startsWith('/wanjie/') ? '世界观详情' : (CRUMB[loc.pathname] ?? '万象');
   const [themeOpen, setThemeOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [cur, setCur] = useState<ThemeName>(getTheme());
   const initial = (user?.displayName || user?.email || '林')?.slice(0, 1);
+
+  // 路由变化时自动收起移动端抽屉
+  useEffect(() => {
+    setNavOpen(false);
+  }, [loc.pathname]);
 
   let lastGroup = '';
   const navNodes = NAV.map((n) => {
@@ -64,18 +70,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   return (
-    <div className="app-shell">
+    <div className={'app-shell' + (navOpen ? ' nav-open' : '')}>
+      <div className="nav-scrim" onClick={() => setNavOpen(false)} />
       <aside className="sidebar">
         <div className="brand-seal">
           <span className="seal">象</span>
           <span className="brand">万象</span>
+          <button className="side-close" onClick={() => setNavOpen(false)} title="关闭">
+            ✕
+          </button>
         </div>
         <nav className="side-nav">{navNodes}</nav>
-        <div className="side-foot">原型示意 · v2 · 双线世界 / 书籍枢纽 / 极简写作台</div>
       </aside>
 
       <div className="main-col">
         <header className="topbar">
+          <button className="nav-toggle" onClick={() => setNavOpen((v) => !v)} title="菜单">
+            ☰
+          </button>
           <div className="brand-mini">
             <span className="seal">象</span> 万象
           </div>
@@ -111,7 +123,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </>
           )}
           <select
-            className="ghost"
+            className="ghost lang-select"
             value={i18n.language}
             onChange={(e) => {
               i18n.changeLanguage(e.target.value);
@@ -127,7 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button className="avatar-btn" title={user?.displayName || user?.email || ''}>
             {initial}
           </button>
-          <button className="ghost" onClick={() => clearAuth()}>
+          <button className="ghost logout-btn" onClick={() => clearAuth()}>
             {t('auth.logout')}
           </button>
         </header>
