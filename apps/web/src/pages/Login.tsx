@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { useUi } from '../store/ui';
 import { Wings } from '../components/Wings';
 import { Phoenix } from '../components/Phoenix';
+import { Ripple } from '../components/Ripple';
 
 type RGB = [number, number, number];
 
@@ -221,6 +222,54 @@ export function Login() {
     }
   }
 
+  const heroAndCard = (
+    <div className={'login-inner' + (flying ? ' flying' : '')}>
+      <div className="login-hero">
+        <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
+        <h1 className="login-brand">万象</h1>
+        <p className="login-tagline">{t('app.subtitle')}</p>
+      </div>
+      <div className="login-wrap">
+        <div className="tabs login-tabs">
+          <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
+            {t('auth.login')}
+          </button>
+          <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
+            {t('auth.register')}
+          </button>
+        </div>
+        <form onSubmit={submit} className="auth-form">
+          <input
+            type="email"
+            placeholder={t('auth.email')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder={t('auth.password')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {mode === 'register' && (
+            <input
+              placeholder={t('auth.displayName')}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          )}
+          {error && <div className="err">{error}</div>}
+          <button type="submit" disabled={busy}>
+            {mode === 'login' ? t('auth.login') : t('auth.register')}
+          </button>
+        </form>
+        <div className="hint">支持邮箱注册与登录 · 外观可在设置页自由定制</div>
+      </div>
+    </div>
+  );
+
   return (
     <div
       className={'login-view' + (renderMode === 'phoenix' ? ' phoenix-mode' : '')}
@@ -231,54 +280,22 @@ export function Login() {
       ) : (
         <canvas ref={canvasRef} className="login-canvas" style={{ display: 'none' }} />
       )}
-      {renderMode === 'wings' && <Wings />}
-      {renderMode === 'phoenix' && <Phoenix flyAway={flying} />}
-      <div className="login-vignette" />
-      <div className={'login-inner' + (flying ? ' flying' : '')}>
-        <div className="login-hero">
-          <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
-          <h1 className="login-brand">万象</h1>
-          <p className="login-tagline">{t('app.subtitle')}</p>
-        </div>
-        <div className="login-wrap">
-          <div className="tabs login-tabs">
-            <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
-              {t('auth.login')}
-            </button>
-            <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
-              {t('auth.register')}
-            </button>
+      {renderMode === 'phoenix' ? (
+        // 宽屏：左凤凰右登录；窄屏上下堆叠（CSS 控制）
+        <div className="login-split">
+          <div className="login-bird">
+            <Phoenix flyAway={flying} />
           </div>
-          <form onSubmit={submit} className="auth-form">
-            <input
-              type="email"
-              placeholder={t('auth.email')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder={t('auth.password')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {mode === 'register' && (
-              <input
-                placeholder={t('auth.displayName')}
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            )}
-            {error && <div className="err">{error}</div>}
-            <button type="submit" disabled={busy}>
-              {mode === 'login' ? t('auth.login') : t('auth.register')}
-            </button>
-          </form>
-          <div className="hint">支持邮箱注册与登录 · 外观可在设置页自由定制</div>
+          <div className="login-panel">{heroAndCard}</div>
         </div>
-      </div>
+      ) : (
+        <>
+          {renderMode === 'wings' && <Wings />}
+          {heroAndCard}
+        </>
+      )}
+      {renderMode !== 'flow' && <Ripple />}
+      <div className="login-vignette" />
     </div>
   );
 }
