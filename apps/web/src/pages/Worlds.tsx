@@ -66,9 +66,9 @@ export function Worlds() {
           <thead>
             <tr>
               <th>{t('wanjie.name')}</th>
-              <th>{t('wanjie.description')}</th>
-              <th>{t('books.chapters')}</th>
-              <th>{t('characters.name')}</th>
+              <th className="col-hide-narrow">{t('wanjie.description')}</th>
+              <th className="col-hide-narrow">{t('books.chapters')}</th>
+              <th className="col-hide-narrow">{t('characters.name')}</th>
               <th className="col-actions">{t('actions.edit')}</th>
             </tr>
           </thead>
@@ -100,9 +100,9 @@ export function Worlds() {
                   <span className="dot" style={{ background: w.coverColor || 'var(--accent)' }} />
                   {w.name}
                 </td>
-                <td className="muted">{w.description || '—'}</td>
-                <td>{w._count?.books ?? 0}</td>
-                <td>{w._count?.characters ?? 0}</td>
+                <td className="muted col-hide-narrow">{w.description || '—'}</td>
+                <td className="col-hide-narrow">{w._count?.books ?? 0}</td>
+                <td className="col-hide-narrow">{w._count?.characters ?? 0}</td>
                 <td className="col-actions">
                   <button className="link" onClick={() => openEdit(w)}>
                     {t('actions.edit')}
