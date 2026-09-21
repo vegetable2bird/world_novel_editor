@@ -7,9 +7,9 @@ interface UiState {
   clearAuth: () => void;
   locale: string;
   setLocale: (l: string) => void;
-  /** 主页（登录页）背景渲染方式：琉璃凤凰 / 晶莹双翼 / 墨流粒子 */
-  renderMode: 'phoenix' | 'wings' | 'flow';
-  setRenderMode: (m: 'phoenix' | 'wings' | 'flow') => void;
+  /** 主页（登录页）背景渲染方式：晨曦水面 / 琉璃凤凰 / 晶莹双翼 */
+  renderMode: 'dawn' | 'phoenix' | 'wings' | 'flow';
+  setRenderMode: (m: 'dawn' | 'phoenix' | 'wings' | 'flow') => void;
 }
 
 const savedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('wx-token') : null;
@@ -36,8 +36,8 @@ export const useUi = create<UiState>((set) => ({
   },
   renderMode:
     (typeof localStorage !== 'undefined' &&
-      (localStorage.getItem('wx-render-mode') as 'phoenix' | 'wings' | 'flow')) ||
-    'phoenix',
+      (localStorage.getItem('wx-render-mode') as 'dawn' | 'phoenix' | 'wings' | 'flow')) ||
+    'dawn',
   setRenderMode: (m) => {
     localStorage.setItem('wx-render-mode', m);
     set({ renderMode: m });

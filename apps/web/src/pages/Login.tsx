@@ -208,7 +208,7 @@ export function Login() {
           : { email, password, displayName: displayName || undefined };
       const res = await api.post<{ accessToken: string; user: any }>(path, body);
       setAuth(res.accessToken, res.user);
-      if (renderMode === 'phoenix') {
+      if (renderMode !== 'flow') {
         // 凤凰飞起过场后再进入应用
         setFlying(true);
         window.setTimeout(() => navigate('/dashboard'), 1080);
@@ -227,6 +227,7 @@ export function Login() {
       <div className="login-hero">
         <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
         <h1 className="login-brand">万象</h1>
+        <div className="login-divider" />
         <p className="login-tagline">{t('app.subtitle')}</p>
       </div>
       <div className="login-wrap">
@@ -270,32 +271,21 @@ export function Login() {
     </div>
   );
 
+  const scene = renderMode !== 'flow';
   return (
-    <div
-      className={'login-view' + (renderMode === 'phoenix' ? ' phoenix-mode' : '')}
-      ref={viewRef}
-    >
+    <div className={'login-view' + (scene ? ' sky' : '')} ref={viewRef}>
       {renderMode === 'flow' ? (
         <canvas ref={canvasRef} className="login-canvas" />
       ) : (
         <canvas ref={canvasRef} className="login-canvas" style={{ display: 'none' }} />
       )}
-      {renderMode === 'phoenix' ? (
-        // 宽屏：左凤凰右登录；窄屏上下堆叠（CSS 控制）
-        <div className="login-split">
-          <div className="login-bird">
-            <Phoenix flyAway={flying} />
-          </div>
-          <div className="login-panel">{heroAndCard}</div>
-        </div>
-      ) : (
-        <>
-          {renderMode === 'wings' && <Wings />}
-          {heroAndCard}
-        </>
-      )}
-      {renderMode !== 'flow' && <Ripple />}
+      {/* 居中单栏：任何屏幕仅缩放，不重排 */}
+      {renderMode === 'wings' && <Wings />}
+      {renderMode === 'phoenix' && <Phoenix emblem flyAway={flying} />}
+      {renderMode === 'dawn' && <Phoenix noBird flyAway={flying} />}
+      {scene && <Ripple />}
       <div className="login-vignette" />
+      {heroAndCard}
     </div>
   );
 }

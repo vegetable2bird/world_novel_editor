@@ -51,19 +51,19 @@ body {
   z-index: 2;
   pointer-events: none;
 }
-/* 凤凰模式的粉紫薄荷天空（对齐 noomo 气质） */
-.login-view.phoenix-mode {
+/* 场景模式的天空：粉 → 淡紫 → 雾蓝的通透渐变（高级留白底） */
+.login-view.sky {
   background: linear-gradient(
-    178deg,
-    #f3dcf1 0%,
-    #e3d7f8 34%,
-    #d9d5f7 58%,
-    #cfe3f2 82%,
-    #d2efe4 100%
+    176deg,
+    #f6e9f4 0%,
+    #ece4fa 36%,
+    #e2e2f9 60%,
+    #d9e7f6 84%,
+    #ddf0ea 100%
   );
 }
-.login-view.phoenix-mode .login-vignette {
-  background: radial-gradient(ellipse at center, transparent 62%, rgba(120, 100, 180, 0.1) 100%);
+.login-view.sky .login-vignette {
+  background: radial-gradient(ellipse at center, transparent 66%, rgba(110, 92, 168, 0.08) 100%);
 }
 
 /* 鼠标水波（波高场物理渲染） */
@@ -76,57 +76,6 @@ body {
   pointer-events: none;
 }
 
-/* 凤凰模式宽屏分栏：左凤凰 · 右登录 */
-.login-split {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-}
-.login-bird {
-  position: relative;
-  flex: 1.15;
-  overflow: hidden;
-}
-.login-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 44px 6vw 44px 3vw;
-  position: relative;
-  z-index: 4;
-}
-.login-panel .login-inner {
-  animation: rise 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) both;
-}
-.login-panel .login-hero {
-  text-align: left;
-}
-.login-panel .login-wrap {
-  margin: 0;
-}
-/* 窄屏：上下堆叠 —— 凤凰在上（约 36vh），登录区在下 */
-@media (max-width: 900px) {
-  .login-split {
-    flex-direction: column;
-  }
-  .login-bird {
-    flex: none;
-    height: 36vh;
-    min-height: 220px;
-  }
-  .login-panel {
-    padding: 12px 18px 40px;
-  }
-  .login-panel .login-hero {
-    text-align: center;
-  }
-  .login-panel .login-wrap {
-    margin: 0 auto;
-  }
-}
 .login-vignette {
   position: fixed;
   inset: 0;
@@ -150,35 +99,41 @@ body {
   opacity: 0;
   transform: translateY(-26px);
 }
-/* 品牌区：大衬线标题 + 字距拉开的眉题（致敬 noomo 叙事站） */
+/* 品牌区：编辑排版式留白 —— 细字重大字距，纯色无渐变 */
 .login-hero {
   text-align: center;
-  margin-bottom: 26px;
-  animation: rise 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  margin-bottom: 34px;
+  animation: rise 1.1s cubic-bezier(0.22, 0.8, 0.3, 1) both;
 }
 .login-eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.42em;
+  font-size: 10px;
+  letter-spacing: 0.55em;
   color: var(--muted);
-  text-indent: 0.42em;
+  text-indent: 0.55em;
+  font-weight: 500;
 }
 .login-brand {
-  font-family: 'Songti SC', 'STSong', serif;
-  font-size: clamp(52px, 9vw, 84px);
-  line-height: 1.1;
-  margin: 10px 0 8px;
-  font-weight: 700;
-  background: linear-gradient(160deg, var(--accent-2) 10%, var(--accent) 55%, color-mix(in srgb, var(--accent) 55%, #000) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 42px color-mix(in srgb, var(--accent) 30%, transparent);
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: clamp(58px, 10vw, 92px);
+  line-height: 1.15;
+  margin: 14px 0 0;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+}
+.login-divider {
+  width: 44px;
+  height: 1px;
+  background: color-mix(in srgb, var(--ink) 34%, transparent);
+  margin: 20px auto 16px;
 }
 .login-tagline {
   color: var(--muted);
-  font-size: 14px;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  letter-spacing: 0.22em;
   margin: 0;
+  text-indent: 0.22em;
 }
 @keyframes rise {
   from {
@@ -190,72 +145,83 @@ body {
     transform: translateY(0);
   }
 }
+/* 表单：去卡片化 —— 无盒子，下划线输入，文字式页签，胶囊描边按钮 */
 .login-wrap {
-  max-width: 400px;
+  max-width: 340px;
   margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 30px 32px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), 0 0 60px color-mix(in srgb, var(--accent) 7%, transparent);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  animation: rise 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) 0.15s both;
+  animation: rise 1.1s cubic-bezier(0.22, 0.8, 0.3, 1) 0.12s both;
 }
 .login-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
+  justify-content: center;
+  gap: 26px;
+  margin-bottom: 26px;
 }
 .login-tabs button {
-  flex: 1;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
   color: var(--muted);
-  padding: 9px;
-  border-radius: 10px;
+  padding: 4px 2px;
   cursor: pointer;
   font-size: 14px;
+  letter-spacing: 0.14em;
+  transition: color 0.2s, border-color 0.2s;
+}
+.login-tabs button:hover {
+  color: var(--ink);
 }
 .login-tabs button.active {
-  background: var(--accent);
-  color: #1a1208;
-  font-weight: 600;
-  border-color: var(--accent);
+  color: var(--ink);
+  border-bottom-color: var(--ink);
 }
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 22px;
 }
 .auth-form input {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 26%, transparent);
+  border-radius: 0;
   color: var(--ink);
-  padding: 12px 14px;
-  border-radius: 11px;
+  padding: 10px 2px;
   font-size: 15px;
+  letter-spacing: 0.05em;
   outline: none;
-  transition: 0.2s;
+  transition: border-color 0.25s;
   font-family: inherit;
+  text-align: center;
+}
+.auth-form input::placeholder {
+  color: color-mix(in srgb, var(--muted) 75%, transparent);
 }
 .auth-form input:focus {
-  border-color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 .auth-form button {
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
-  color: #1a1208;
-  border: 0;
-  padding: 13px;
-  border-radius: 12px;
-  font-weight: 700;
+  align-self: center;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--ink) 55%, transparent);
+  padding: 11px 46px;
+  border-radius: 999px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
   cursor: pointer;
-  font-size: 15px;
-  transition: 0.2s;
-  margin-top: 8px;
+  font-size: 14px;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+  margin-top: 10px;
+}
+.auth-form button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
 }
 .auth-form button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 .err {
@@ -693,6 +659,14 @@ textarea {
   cursor: pointer;
 }
 
+/* 页面细分隔线（编辑排版式） */
+.page-divider {
+  width: 44px;
+  height: 1px;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  margin: 12px 0 14px;
+}
+
 /* ===== Dashboard / 通用卡片 ===== */
 .eyebrow {
   color: var(--muted);
@@ -701,10 +675,11 @@ textarea {
   text-transform: uppercase;
 }
 .title.serif {
-  font-family: 'Songti SC', 'STSong', serif;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
   font-size: 28px;
   margin: 6px 0 4px;
-  font-weight: 700;
+  font-weight: 400;
+  letter-spacing: 0.06em;
 }
 .lede {
   color: var(--muted);

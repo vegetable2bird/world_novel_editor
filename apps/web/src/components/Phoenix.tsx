@@ -5,11 +5,23 @@ type RGB = [number, number, number];
 /**
  * 琉璃凤凰主视觉：AI 生成的透明底水晶凤凰 PNG，Canvas 加持身：
  * - 翱翔漂移（缓慢八字游弋）+ 扇翅呼吸 + 背光光晕脉动 + 流光扫羽 + 晶莹浮尘
+ * - variant 形态：full 全幅主视觉 / emblem 标题上方的小徽记（去饱和、克制） /
+ *   glow（noBird）仅光晕与浮尘，无鸟 —— 高级留白模式
  * - flyAway：登录成功后天翔飞起、放大淡出（页面过场）
  * - compact：Dashboard 横幅形态，挂载时自左侧滑翔入场
  * 光色取自主题 CSS 变量，随色盘自定义即时重染。
  */
-export function Phoenix({ compact = false, flyAway = false }: { compact?: boolean; flyAway?: boolean }) {
+export function Phoenix({
+  compact = false,
+  flyAway = false,
+  emblem = false,
+  noBird = false,
+}: {
+  compact?: boolean;
+  flyAway?: boolean;
+  emblem?: boolean;
+  noBird?: boolean;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const flyRef = useRef(0); // 飞行动画起始时间戳（0=未开始）
   const flyFlag = useRef(flyAway);
@@ -95,8 +107,9 @@ export function Phoenix({ compact = false, flyAway = false }: { compact?: boolea
       const t = (now - start) / 1000;
       ctx.clearRect(0, 0, W, H);
       const u = compact ? Math.min(W, H * 3) : Math.min(W, H);
+      // 形态决定构图位置
       const cx0 = W / 2;
-      const cy0 = compact ? H * 0.56 : H * 0.4;
+      const cy0 = noBird ? H * 0.32 : emblem ? H * (W < 700 ? 0.16 : 0.21) : compact ? H * 0.56 : H * 0.4;
       const { accent, accent2 } = pal;
 
       // 飞走过场进度 0..1（1.15s，smoothstep）
@@ -111,19 +124,21 @@ export function Phoenix({ compact = false, flyAway = false }: { compact?: boolea
         enter = ep * ep * (3 - 2 * ep);
       }
 
-      // 翱翔漂移 + 扇翅
-      const soarX = (Math.sin(t * 0.22) * W * 0.02 - (1 - enter) * W * 0.34) * (1 - fly);
-      const soarY = (Math.cos(t * 0.17) * H * 0.012 - fly * H * 0.42) + Math.sin(t * 0.55) * u * 0.006;
-      const flap = Math.sin(t * 2.0) * 0.018 * (1 - fly); // 扇翅
+      // 翱翔漂移 + 扇翅（徽记更克制）
+      const driftAmp = emblem ? 0.35 : 1;
+      const soarX = (Math.sin(t * 0.22) * W * 0.02 * driftAmp - (1 - enter) * W * 0.34) * (1 - fly);
+      const soarY = (Math.cos(t * 0.17) * H * 0.012 * driftAmp - fly * H * 0.42) + Math.sin(t * 0.55) * u * 0.006;
+      const flap = Math.sin(t * 2.0) * (emblem ? 0.01 : 0.018) * (1 - fly); // 扇翅
       const breath = Math.sin(t * 0.55);
-      const rot = Math.sin(t * 0.22) * 0.022 - fly * 0.28;
-      const alpha = (1 - fly) * (0.35 + 0.65 * enter);
+      const rot = Math.sin(t * 0.22) * (emblem ? 0.012 : 0.022) - fly * 0.28;
+      const alpha = (1 - fly) * (0.35 + 0.65 * enter) * (emblem ? 0.82 : 1);
       const scaleUp = (1 + fly * 0.85) * (1 + breath * 0.006);
       const cx = cx0 + soarX;
       const cy = cy0 + soarY;
 
-      // 背光光晕（太阳）
-      const sunR = u * (compact ? 0.3 : 0.34) * (1 + breath * 0.03) * (1 + fly * 0.5);
+      // 背光光晕（太阳；徽记收敛、无光鸟模式为主光源）
+      const sunBase = noBird ? 0.3 : emblem ? 0.2 : compact ? 0.3 : 0.34;
+      const sunR = u * sunBase * (1 + breath * 0.03) * (1 + fly * 0.5);
       const sun = ctx.createRadialGradient(cx, cy, 0, cx, cy, sunR);
       sun.addColorStop(0, css(WHITE, 0.85 * alpha));
       sun.addColorStop(0.25, css(mix(WHITE, accent2, 0.25), 0.5 * alpha));
@@ -132,16 +147,19 @@ export function Phoenix({ compact = false, flyAway = false }: { compact?: boolea
       ctx.fillStyle = sun;
       ctx.fillRect(cx - sunR, cy - sunR, sunR * 2, sunR * 2);
 
-      if (loaded && alpha > 0.01) {
+      if (loaded && alpha > 0.01 && !noBird) {
         const iw = img.width;
         const ih = img.height;
-        const drawW = Math.min(W * (compact ? 0.86 : 0.92), u * 1.55) * scaleUp;
+        // 徽记：小而克制，去饱和融入排版
+        const drawW = (emblem ? Math.min(W * 0.34, 340) : Math.min(W * (compact ? 0.86 : 0.92), u * 1.55)) * scaleUp;
         const drawH = drawW * (ih / iw) * (1 + flap); // 扇翅：纵向呼吸
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(rot);
+        if (emblem) ctx.filter = 'saturate(0.55) brightness(1.04)';
         ctx.globalAlpha = Math.min(1, alpha);
         ctx.drawImage(img, -drawW / 2, -drawH * 0.52, drawW, drawH);
+        ctx.filter = 'none';
         ctx.globalAlpha = 1;
 
         // 流光扫过：斜向亮带，仅落在凤凰不透明区域
