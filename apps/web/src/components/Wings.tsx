@@ -27,10 +27,11 @@ type WingSpec = {
 const WHITE: RGB = [255, 255, 255];
 
 /**
- * 翅膀画布 · 晶莹双翼版
- * 上下两对翅膀（上翅小巧上扬 / 下翅宽大舒展），羽毛为玻璃质感：
- * 半透明白玉羽面 + 主题色描边 + 羽脊高光，扇动时如水晶羽翼。
- * 颜色取自主题 CSS 变量（--accent / --accent-2），随色盘自定义即时重染。
+ * 翅膀画布 · 琉璃晶莹双翼版
+ * 还原 noomo 叙事站气质：琉璃玻璃质感 ——
+ * 羽毛为高通明白玉羽面，前沿一线高光、后缘一道折射彩边，
+ * 翼尖指状分开，双翅（上小下大）交错扇动。
+ * 颜色取自主题 CSS 变量，随色盘自定义即时重染。
  */
 export function Wings({ compact = false }: { compact?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -67,11 +68,10 @@ export function Wings({ compact = false }: { compact?: boolean }) {
     const css = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
     const luminance = (c: RGB) => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
 
-    // 调色板：随主题重建；lightMode 决定辉光混合方式（浅底不能用 additive，会发白过曝）
+    // 调色板：随主题重建；lightMode 决定辉光混合方式（浅底不能用 additive，会过曝）
     let pal = {
       accent: [0, 0, 0] as RGB,
       accent2: [0, 0, 0] as RGB,
-      deep: [0, 0, 0] as RGB,
       bg: [0, 0, 0] as RGB,
       lightMode: true,
     };
@@ -79,21 +79,19 @@ export function Wings({ compact = false }: { compact?: boolean }) {
       const a = toRgb(cssVar('--accent'));
       const a2 = toRgb(cssVar('--accent-2') || cssVar('--accent'));
       const bg = toRgb(cssVar('--bg'));
-      pal = {
-        accent: a,
-        accent2: a2,
-        deep: mix(a, bg, 0.45),
-        bg,
-        lightMode: luminance(bg) > 0.55,
-      };
+      pal = { accent: a, accent2: a2, bg, lightMode: luminance(bg) > 0.55 };
     };
 
-    // 羽毛扇形分布
-    const fan = (from: number, to: number, n: number, peak: number, sigma: number, offBase: number): Feather[] => {
+    // 羽毛扇形分布；tipSpread 让外缘羽毛间距拉大，形成指状翼尖
+    const fan = (
+      from: number, to: number, n: number, peak: number, sigma: number,
+      offBase: number, tipSpread = 0.72,
+    ): Feather[] => {
       const arr: Feather[] = [];
       for (let i = 0; i < n; i++) {
         const t = n === 1 ? 0.5 : i / (n - 1);
-        const angle = from + (to - from) * t;
+        const ts = Math.pow(t, tipSpread); // 外缘拉开 → 翼尖指状分开
+        const angle = from + (to - from) * ts;
         const bell = Math.exp(-((angle - peak) ** 2) / (2 * sigma * sigma));
         arr.push({
           angle,
@@ -112,19 +110,19 @@ export function Wings({ compact = false }: { compact?: boolean }) {
       flapAmp: 1,
       alpha: 1,
       layers: [
-        { scale: 1.0, shade: 0.1, sweep: 14, feathers: fan(-80, 6, 9, -30, 26, 0.02) },
-        { scale: 0.78, shade: 0.45, sweep: 9, feathers: fan(-64, 20, 11, -24, 26, 0.1) },
-        { scale: 0.45, shade: 0.8, sweep: 5, feathers: fan(-52, 28, 13, -16, 26, 0.16) },
+        { scale: 1.0, shade: 0.1, sweep: 14, feathers: fan(-80, 4, 9, -32, 26, 0.02) },
+        { scale: 0.78, shade: 0.45, sweep: 9, feathers: fan(-62, 18, 10, -24, 26, 0.1) },
+        { scale: 0.45, shade: 0.8, sweep: 5, feathers: fan(-50, 26, 12, -16, 26, 0.16) },
       ],
     };
     const UPPER: WingSpec = {
       pivotDy: -0.16,
       flapPhase: 1.1,
       flapAmp: 1.35,
-      alpha: 0.82,
+      alpha: 0.85,
       layers: [
-        { scale: 0.6, shade: 0.3, sweep: 10, feathers: fan(-102, -34, 8, -72, 22, 0.02) },
-        { scale: 0.36, shade: 0.7, sweep: 6, feathers: fan(-92, -30, 10, -66, 22, 0.08) },
+        { scale: 0.6, shade: 0.3, sweep: 10, feathers: fan(-104, -36, 8, -74, 22, 0.02) },
+        { scale: 0.36, shade: 0.7, sweep: 6, feathers: fan(-94, -32, 9, -66, 22, 0.08) },
       ],
     };
 
@@ -157,54 +155,80 @@ export function Wings({ compact = false }: { compact?: boolean }) {
 
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    /** 单根玻璃质感羽毛 */
+    /**
+     * 单根琉璃羽毛。
+     * 无描边轮廓：前沿一道白高光、后缘一道主题色折射彩边，
+     * 羽面中段一条镜面反光带，端头晶亮。
+     */
     const drawFeather = (
       bx: number, by: number, dx: number, dy: number, L: number,
       wHalf: number, alpha: number, shade: number,
     ) => {
-      const tx = bx + dx * L - dy * L * 0.05;
-      const ty = by + dy * L + dx * L * 0.05;
-      const { accent, accent2, deep, lightMode } = pal;
-      const edge = mix(accent2, WHITE, 0.25 + shade * 0.35); // 描边色：浅紫→白
-      const faceTop = lightMode ? mix(accent2, WHITE, 0.55 + shade * 0.25) : mix(deep, accent2, 0.5);
+      const { accent, accent2, bg, lightMode } = pal;
+      const tipX = bx + dx * L - dy * L * 0.06;
+      const tipY = by + dy * L + dx * L * 0.06;
+      // 前沿 / 后缘控制点
+      const leadX = bx + dx * L * 0.42 - dy * wHalf;
+      const leadY = by + dy * L * 0.42 + dx * wHalf;
+      const trailX = bx + dx * L * 0.58 + dy * wHalf * 0.92;
+      const trailY = by + dy * L * 0.58 - dx * wHalf * 0.92;
 
-      // 羽面：基部淡彩 → 端部白玉
-      const g = ctx.createLinearGradient(bx, by, tx, ty);
-      g.addColorStop(0, css(mix(accent, pal.bg, lightMode ? 0.55 : 0.35), 0.2 * alpha));
-      g.addColorStop(0.5, css(faceTop, (lightMode ? 0.3 : 0.5) * alpha));
-      g.addColorStop(1, css(WHITE, (lightMode ? 0.5 : 0.65) * alpha));
+      // 羽面：基部淡彩 → 中段乳白 → 端头最亮（玻璃透光感）
+      const g = ctx.createLinearGradient(bx, by, tipX, tipY);
+      g.addColorStop(0, css(mix(accent, bg, lightMode ? 0.6 : 0.4), 0.16 * alpha));
+      g.addColorStop(0.4, css(WHITE, (lightMode ? 0.1 : 0.16) * alpha));
+      g.addColorStop(0.78, css(WHITE, (lightMode ? 0.26 : 0.4) * alpha));
+      g.addColorStop(1, css(WHITE, (lightMode ? 0.5 : 0.62) * alpha));
       ctx.beginPath();
       ctx.moveTo(bx, by);
-      ctx.quadraticCurveTo(bx + dx * L * 0.38 - dy * wHalf, by + dy * L * 0.38 + dx * wHalf, tx, ty);
-      ctx.quadraticCurveTo(bx + dx * L * 0.62 + dy * wHalf * 0.62, by + dy * L * 0.62 - dx * wHalf * 0.62, bx, by);
+      ctx.quadraticCurveTo(leadX, leadY, tipX, tipY);
+      ctx.quadraticCurveTo(trailX, trailY, bx, by);
       ctx.closePath();
       ctx.fillStyle = g;
       ctx.fill();
 
-      // 描边（玻璃轮廓）
-      ctx.strokeStyle = css(edge, (lightMode ? 0.55 : 0.7) * alpha);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // 羽脊高光：基→端一道亮线 + 端头光点
-      const sg = ctx.createLinearGradient(bx, by, tx, ty);
-      sg.addColorStop(0, css(WHITE, 0));
-      sg.addColorStop(0.6, css(WHITE, (lightMode ? 0.5 : 0.65) * alpha));
-      sg.addColorStop(1, css(WHITE, 0.85 * alpha));
+      // 后缘折射彩边（琉璃的彩色边线，随羽层深浅变化）
+      const edgeG = ctx.createLinearGradient(bx, by, tipX, tipY);
+      edgeG.addColorStop(0, css(accent, 0.3 * alpha));
+      edgeG.addColorStop(0.6, css(mix(accent2, WHITE, 0.3 + shade * 0.3), 0.42 * alpha));
+      edgeG.addColorStop(1, css(WHITE, 0.5 * alpha));
       ctx.beginPath();
-      ctx.moveTo(bx + dx * L * 0.08, by + dy * L * 0.08);
-      ctx.quadraticCurveTo(bx + dx * L * 0.5 - dy * wHalf * 0.12, by + dy * L * 0.5 + dx * wHalf * 0.12, tx, ty);
-      ctx.strokeStyle = sg;
-      ctx.lineWidth = Math.max(1, L * 0.012);
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(trailX, trailY, tipX, tipY);
+      ctx.strokeStyle = edgeG;
+      ctx.lineWidth = 1.1;
       ctx.stroke();
 
-      // 端头晶莹光点
-      const tipG = ctx.createRadialGradient(tx, ty, 0, tx, ty, L * 0.07);
-      tipG.addColorStop(0, css(WHITE, 0.75 * alpha));
+      // 前沿白高光（玻璃受光边）
+      const rimG = ctx.createLinearGradient(bx, by, tipX, tipY);
+      rimG.addColorStop(0, css(WHITE, 0.15 * alpha));
+      rimG.addColorStop(0.5, css(WHITE, 0.7 * alpha));
+      rimG.addColorStop(1, css(WHITE, 0.2 * alpha));
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(leadX, leadY, tipX, tipY);
+      ctx.strokeStyle = rimG;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // 镜面反光带：羽面中段一道宽而柔的亮带
+      const mx = bx + dx * L * 0.4 - dy * wHalf * 0.25;
+      const my = by + dy * L * 0.4 + dx * wHalf * 0.25;
+      const streak = ctx.createRadialGradient(mx, my, 0, mx, my, L * 0.34);
+      streak.addColorStop(0, css(WHITE, (lightMode ? 0.3 : 0.42) * alpha));
+      streak.addColorStop(1, css(WHITE, 0));
+      ctx.fillStyle = streak;
+      ctx.beginPath();
+      ctx.arc(mx, my, L * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 端头晶亮
+      const tipG = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, L * 0.08);
+      tipG.addColorStop(0, css(WHITE, 0.85 * alpha));
       tipG.addColorStop(1, css(WHITE, 0));
       ctx.fillStyle = tipG;
       ctx.beginPath();
-      ctx.arc(tx, ty, L * 0.07, 0, Math.PI * 2);
+      ctx.arc(tipX, tipY, L * 0.08, 0, Math.PI * 2);
       ctx.fill();
     };
 
@@ -228,18 +252,18 @@ export function Wings({ compact = false }: { compact?: boolean }) {
           const L = f.len * layer.scale * u * 0.5 * breathe;
           const bx = px + dx * f.off * u * 0.1;
           const by = py + dy * f.off * u * 0.1;
-          const wHalf = L * (0.14 + 0.05 * (1 - f.len));
+          const wHalf = L * (0.13 + 0.05 * (1 - f.len));
           drawFeather(bx, by, dx, dy, L, wHalf, spec.alpha * globalAlpha, layer.shade);
         }
       }
 
       // 肩部柔光
       const { accent2, lightMode } = pal;
-      const gr = ctx.createRadialGradient(px, py, 0, px, py, u * 0.22);
-      gr.addColorStop(0, css(accent2, (lightMode ? 0.12 : 0.18) * spec.alpha * globalAlpha));
+      const gr = ctx.createRadialGradient(px, py, 0, px, py, u * 0.2);
+      gr.addColorStop(0, css(accent2, (lightMode ? 0.1 : 0.16) * spec.alpha * globalAlpha));
       gr.addColorStop(1, css(accent2, 0));
       ctx.fillStyle = gr;
-      ctx.fillRect(px - u * 0.22, py - u * 0.22, u * 0.44, u * 0.44);
+      ctx.fillRect(px - u * 0.2, py - u * 0.2, u * 0.4, u * 0.4);
     };
 
     /** 单侧双翅：先画上翅（后层），再画下翅（前层） */
@@ -263,7 +287,7 @@ export function Wings({ compact = false }: { compact?: boolean }) {
       if (!lightMode) ctx.globalCompositeOperation = 'lighter';
       const pulse = 0.85 + 0.15 * Math.sin(t * 0.55);
       const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, u * 0.46);
-      core.addColorStop(0, css(accent2, (lightMode ? 0.08 : 0.15) * pulse));
+      core.addColorStop(0, css(accent2, (lightMode ? 0.07 : 0.14) * pulse));
       core.addColorStop(1, css(accent2, 0));
       ctx.fillStyle = core;
       ctx.fillRect(0, 0, W, H);

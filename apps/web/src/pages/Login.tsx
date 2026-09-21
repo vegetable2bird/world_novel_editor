@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { useUi } from '../store/ui';
 import { Wings } from '../components/Wings';
+import { Phoenix } from '../components/Phoenix';
 
 type RGB = [number, number, number];
 
@@ -11,6 +12,7 @@ export function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const setAuth = useUi((s) => s.setAuth);
+  const renderMode = useUi((s) => s.renderMode);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -159,8 +161,9 @@ export function Login() {
     resize();
     rebuildPalette();
     init();
-    if (reduced) {
-      ctx.fillStyle = `rgba(${lBg[0]},${lBg[1]},${lBg[2]},0.5)`;
+    if (reduced || renderMode !== 'flow') {
+      // 非墨流模式：铺纯色底即可（翅膀画布在另一层渲染）
+      ctx.fillStyle = `rgb(${lBg[0]},${lBg[1]},${lBg[2]})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
       animate();
@@ -189,7 +192,7 @@ export function Login() {
       view?.removeEventListener('click', onClick);
       mo.disconnect();
     };
-  }, []);
+  }, [renderMode]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,8 +216,13 @@ export function Login() {
 
   return (
     <div className="login-view" ref={viewRef}>
-      <canvas ref={canvasRef} className="login-canvas" />
-      <Wings />
+      {renderMode === 'flow' ? (
+        <canvas ref={canvasRef} className="login-canvas" />
+      ) : (
+        <canvas ref={canvasRef} className="login-canvas" style={{ display: 'none' }} />
+      )}
+      {renderMode === 'wings' && <Wings />}
+      {renderMode === 'phoenix' && <Phoenix />}
       <div className="login-vignette" />
       <div className="login-inner">
         <div className="login-hero">

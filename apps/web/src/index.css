@@ -1105,6 +1105,16 @@ textarea {
   color: var(--muted);
   line-height: 1.5;
 }
+/* 主页渲染方式选中态 */
+.mode-card {
+  text-align: left;
+  font-family: inherit;
+}
+.mode-card.sel {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
 
 /* ===== 响应式 ===== */
 @media (max-width: 1100px) {

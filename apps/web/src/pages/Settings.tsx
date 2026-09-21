@@ -11,6 +11,8 @@ export function Settings() {
   const { t } = useTranslation();
   const setLocale = useUi((s) => s.setLocale);
   const user = useUi((s) => s.user);
+  const renderMode = useUi((s) => s.renderMode);
+  const setRenderMode = useUi((s) => s.setRenderMode);
   const [cur] = useState<ThemeName>(getTheme());
   const [accent, setAccent] = useState<string>(getAccent() || DEFAULT_ACCENT);
   return (
@@ -44,6 +46,27 @@ export function Settings() {
           >
             恢复默认主题色
           </button>
+        </div>
+        <div className="field" style={{ marginTop: 14 }}>
+          <span>主页渲染方式（登录页背景）</span>
+          <div className="nw-opt">
+            {(
+              [
+                { m: 'phoenix', t: '琉璃凤凰', d: '水晶凤凰悬于光晕之中，流光扫过羽面（默认）' },
+                { m: 'wings', t: '晶莹双翼', d: '程序化绘制的玻璃羽翼，随主题色染彩' },
+                { m: 'flow', t: '墨流粒子', d: '流线型粒子墨流，随主题色变换' },
+              ] as const
+            ).map((o) => (
+              <button
+                key={o.m}
+                className={'nw-card mode-card' + (renderMode === o.m ? ' sel' : '')}
+                onClick={() => setRenderMode(o.m)}
+              >
+                <div className="nt">{o.t}</div>
+                <div className="nd">{o.d}</div>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="kv-row" style={{ marginTop: 14 }}>
           <span className="k">语言</span>
