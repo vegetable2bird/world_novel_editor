@@ -39,40 +39,76 @@ body {
   z-index: 1;
   pointer-events: none;
 }
-.login-vignette {
-  position: fixed;
+/* 翅膀画布：位于墨流之上、暗角之下 */
+.wings-canvas {
+  position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.42) 100%);
+}
+.login-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.46) 100%);
 }
 .login-inner {
   position: relative;
-  z-index: 3;
+  z-index: 4;
   width: 100%;
 }
+/* 品牌区：大衬线标题 + 字距拉开的眉题（致敬 noomo 叙事站） */
+.login-hero {
+  text-align: center;
+  margin-bottom: 26px;
+  animation: rise 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.login-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  color: var(--muted);
+  text-indent: 0.42em;
+}
+.login-brand {
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: clamp(52px, 9vw, 84px);
+  line-height: 1.1;
+  margin: 10px 0 8px;
+  font-weight: 700;
+  background: linear-gradient(160deg, var(--accent-2) 10%, var(--accent) 55%, color-mix(in srgb, var(--accent) 55%, #000) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 42px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.login-tagline {
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .login-wrap {
-  max-width: 440px;
-  margin: 40px auto;
+  max-width: 400px;
+  margin: 0 auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 22px;
-  padding: 38px 34px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+  padding: 30px 32px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), 0 0 60px color-mix(in srgb, var(--accent) 7%, transparent);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-}
-.login-h {
-  font-family: 'Songti SC', 'STSong', serif;
-  font-size: 30px;
-  text-align: center;
-  margin: 0;
-}
-.login-sub {
-  text-align: center;
-  color: var(--muted);
-  margin: 6px 0 22px;
-  font-size: 14px;
+  animation: rise 0.9s cubic-bezier(0.22, 0.8, 0.3, 1) 0.15s both;
 }
 .login-tabs {
   display: flex;
@@ -1196,5 +1232,91 @@ textarea {
   }
   .lang-select {
     max-width: 84px;
+  }
+}
+
+/* ===== Dashboard 翅膀横幅 ===== */
+.hero-wing {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 160% at 50% 120%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--bg-2);
+  margin-bottom: 24px;
+}
+.hero-wing .wings-canvas {
+  position: absolute;
+}
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  padding: 30px 28px 26px;
+}
+
+/* ===== 全局细节打磨 ===== */
+::selection {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: var(--ink);
+}
+/* 细滚动条，拇指带主题色 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* 键盘可达性焦点 */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 2px;
+}
+/* 卡片与按钮的 hover 呼吸感 */
+.card,
+.qbtn,
+.nw-card,
+.tpl-card {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+.card:hover,
+.qbtn:hover,
+.nw-card:hover {
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.auth-form input {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.auth-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.auth-form button:not(:disabled):hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+/* 侧栏当前项过渡 */
+.side-link {
+  transition: background 0.18s ease, color 0.18s ease;
+}
+/* 移动端收敛翅膀高度，避免横幅过高 */
+@media (max-width: 760px) {
+  .hero-inner {
+    padding: 22px 18px 18px;
+  }
+  .login-brand {
+    text-shadow: none;
   }
 }

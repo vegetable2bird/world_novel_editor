@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { useUi } from '../store/ui';
+import { Wings } from '../components/Wings';
 
 type RGB = [number, number, number];
 
@@ -213,11 +214,15 @@ export function Login() {
   return (
     <div className="login-view" ref={viewRef}>
       <canvas ref={canvasRef} className="login-canvas" />
+      <Wings />
       <div className="login-vignette" />
       <div className="login-inner">
+        <div className="login-hero">
+          <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
+          <h1 className="login-brand">万象</h1>
+          <p className="login-tagline">{t('app.subtitle')}</p>
+        </div>
         <div className="login-wrap">
-          <h1 className="brand login-h">万象</h1>
-          <p className="muted login-sub">{t('app.subtitle')}</p>
           <div className="tabs login-tabs">
             <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
               {t('auth.login')}
