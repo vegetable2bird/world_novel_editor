@@ -2,8 +2,11 @@ import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../store/ui';
-import { THEMES, setTheme, getTheme, type ThemeName } from '../theme';
+import { THEMES, getTheme, applyAccent, getAccent, type ThemeName } from '../theme';
 import i18n, { SUPPORTED_LOCALES } from '../i18n';
+import { ColorWheel } from './ColorWheel';
+
+const DEFAULT_ACCENT = '#6d4fd0';
 
 type NavItem = { to: string; icon: string; key: string; group: string };
 const NAV: NavItem[] = [
@@ -43,6 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [themeOpen, setThemeOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [cur, setCur] = useState<ThemeName>(getTheme());
+  const [accent, setAccent] = useState<string>(getAccent() || DEFAULT_ACCENT);
   const initial = (user?.displayName || user?.email || '林')?.slice(0, 1);
 
   // 路由变化时自动收起移动端抽屉
@@ -102,23 +106,24 @@ export function AppShell({ children }: { children: ReactNode }) {
             <>
               <div style={{ position: 'fixed', inset: 0, zIndex: 60 }} onClick={() => setThemeOpen(false)} />
               <div className="theme-pop">
-                <div className="tp-title">主题预设</div>
-                <div className="theme-grid">
-                  {THEMES.map((tm) => (
-                    <button
-                      key={tm.name}
-                      className={'theme-dot' + (cur === tm.name ? ' sel' : '')}
-                      style={{ background: tm.swatch, borderColor: tm.border || 'transparent' }}
-                      title={tm.label}
-                      onClick={() => {
-                        setTheme(tm.name);
-                        setCur(tm.name);
-                        setThemeOpen(false);
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="theme-name">当前：{THEMES.find((x) => x.name === cur)?.label}</div>
+                <div className="tp-title">主题色 · {THEMES.find((x) => x.name === cur)?.label}</div>
+                <ColorWheel
+                  value={accent}
+                  onChange={(hex) => {
+                    setAccent(hex);
+                    applyAccent(hex);
+                  }}
+                />
+                <button
+                  className="mini-btn"
+                  style={{ width: '100%', marginTop: 10 }}
+                  onClick={() => {
+                    setAccent(DEFAULT_ACCENT);
+                    applyAccent(null);
+                  }}
+                >
+                  恢复默认主题色
+                </button>
               </div>
             </>
           )}

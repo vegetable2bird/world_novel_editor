@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../store/ui';
-import { THEMES, setTheme, getTheme, type ThemeName } from '../theme';
+import { THEMES, getTheme, applyAccent, getAccent, type ThemeName } from '../theme';
 import i18n, { SUPPORTED_LOCALES } from '../i18n';
+import { ColorWheel } from '../components/ColorWheel';
+
+const DEFAULT_ACCENT = '#6d4fd0';
 
 export function Settings() {
   const { t } = useTranslation();
   const setLocale = useUi((s) => s.setLocale);
   const user = useUi((s) => s.user);
-  const [cur, setCur] = useState<ThemeName>(getTheme());
+  const [cur] = useState<ThemeName>(getTheme());
+  const [accent, setAccent] = useState<string>(getAccent() || DEFAULT_ACCENT);
   return (
     <section>
       <div className="eyebrow">配置</div>
@@ -22,19 +26,24 @@ export function Settings() {
           <span className="k">主题</span>
           <span className="theme-name">{THEMES.find((x) => x.name === cur)?.label}</span>
         </div>
-        <div className="theme-grid" style={{ marginTop: 12 }}>
-          {THEMES.map((tm) => (
-            <button
-              key={tm.name}
-              className={'theme-dot' + (cur === tm.name ? ' sel' : '')}
-              style={{ background: tm.swatch, borderColor: tm.border || 'transparent' }}
-              title={tm.label}
-              onClick={() => {
-                setTheme(tm.name);
-                setCur(tm.name);
-              }}
-            />
-          ))}
+        <div className="field" style={{ marginTop: 14 }}>
+          <span>主题色（在色盘上拖动选取，全站即时生效）</span>
+          <ColorWheel
+            value={accent}
+            onChange={(hex) => {
+              setAccent(hex);
+              applyAccent(hex);
+            }}
+          />
+          <button
+            className="mini-btn"
+            onClick={() => {
+              setAccent(DEFAULT_ACCENT);
+              applyAccent(null);
+            }}
+          >
+            恢复默认主题色
+          </button>
         </div>
         <div className="kv-row" style={{ marginTop: 14 }}>
           <span className="k">语言</span>

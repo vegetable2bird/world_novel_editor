@@ -51,7 +51,12 @@ body {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.46) 100%);
+  /* 深色主题为压暗边缘，浅色主题为淡墨收边，均随主题自适应 */
+  background: radial-gradient(
+    ellipse at center,
+    transparent 52%,
+    color-mix(in srgb, var(--ink) 26%, transparent) 100%
+  );
 }
 .login-inner {
   position: relative;
@@ -1233,6 +1238,51 @@ textarea {
   .lang-select {
     max-width: 84px;
   }
+}
+
+/* ===== 色盘（ColorWheel） ===== */
+.cw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.cw-wheel {
+  line-height: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.cw-wheel canvas {
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+}
+.cw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.cw-hex {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: ui-monospace, Consolas, monospace;
+  min-width: 52px;
+}
+.cw-row input[type='range'] {
+  flex: 1;
+  padding: 0;
+  height: 18px;
+  accent-color: var(--accent);
+  background: transparent;
+  border: 0;
+}
+.cw-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 /* ===== Dashboard 翅膀横幅 ===== */

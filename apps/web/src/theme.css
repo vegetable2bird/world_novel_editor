@@ -1,136 +1,30 @@
-/* 万象 · 多主题系统（CSS 变量，对齐原型 v2）
-   默认：暗夜墨金（data-theme="ink"）
-   切换：<html data-theme="..."> 由 theme.ts 写入
-   每套主题补全原型用到的全部变量，避免组件引用未定义变量导致视觉破碎。 */
+/* 万象 · 主题系统（CSS 变量）
+   默认：丁香淡紫（灵感来自 noomo 叙事站，data-theme="lilac"）
+   自定义：用户在色盘选取的主题色通过行内 --accent / --accent-2 / --accent-ink 覆盖（theme.ts 写入） */
 
 :root,
-[data-theme='ink'] {
-  --bg: #0b0f1a;
-  --bg-2: #101627;
-  --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.07);
-  --ink: #e8e3d4;
-  --muted: #8b93a7;
-  --faint: #7c8499;
-  --line: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.1);
-  --accent-ink: #d4af37;
-  --seal-ink: #c8453a;
-  --warn-ink: #e0a458;
-  --accent: #d4af37; /* 金 */
-  --accent-2: #e8c96a;
-  --seal: #c8453a; /* 印章红 */
-  --ok: #5fbf8f;
-  --warn: #e0a458;
-  color-scheme: dark;
-}
-
-[data-theme='porcelain'] {
-  --bg: #f6f4ee;
-  --bg-2: #ffffff;
-  --surface: rgba(20, 20, 30, 0.035);
-  --surface-2: rgba(20, 20, 30, 0.06);
-  --ink: #1c1f2b;
-  --muted: #5f6675;
-  --faint: #626b7a;
-  --line: rgba(20, 20, 30, 0.12);
-  --border: rgba(20, 20, 30, 0.12);
-  --accent-ink: #7a5a16;
-  --seal-ink: #9a3b30;
-  --warn-ink: #8f5c1d;
-  --accent: #b0892c;
-  --accent-2: #caa648;
-  --seal: #c0392b;
-  --ok: #3f9e6f;
-  --warn: #c98a2e;
+[data-theme='lilac'] {
+  --bg: #ddd3f6;
+  --bg-2: #eae3fb;
+  --surface: rgba(255, 255, 255, 0.5);
+  --surface-2: rgba(255, 255, 255, 0.66);
+  --ink: #262040;
+  --muted: #6f6790;
+  --faint: #7a7299;
+  --line: rgba(38, 32, 64, 0.14);
+  --border: rgba(38, 32, 64, 0.14);
+  --accent-ink: #452aa8;
+  --seal-ink: #9a332a;
+  --warn-ink: #8a5a14;
+  --accent: #6d4fd0; /* 主色：深紫 */
+  --accent-2: #a78bfa; /* 浅紫 */
+  --seal: #b3382e; /* 印章红 */
+  --ok: #2f8f5f;
+  --warn: #b97a1e;
   color-scheme: light;
 }
 
-[data-theme='sakura'] {
-  --bg: #1a1320;
-  --bg-2: #241825;
-  --surface: rgba(255, 255, 255, 0.05);
-  --surface-2: rgba(255, 255, 255, 0.08);
-  --ink: #f3e7ee;
-  --muted: #b89bae;
-  --faint: #a98ba2;
-  --line: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.12);
-  --accent-ink: #f4a6c0;
-  --seal-ink: #e0556f;
-  --warn-ink: #e8b06a;
-  --accent: #f4a6c0;
-  --accent-2: #ffc4d8;
-  --seal: #e0556f;
-  --ok: #7fcf9f;
-  --warn: #e8b06a;
-  color-scheme: dark;
-}
-
-[data-theme='aurora'] {
-  --bg: #06141a;
-  --bg-2: #0a1f29;
-  --surface: rgba(255, 255, 255, 0.05);
-  --surface-2: rgba(255, 255, 255, 0.08);
-  --ink: #d8eef0;
-  --muted: #7fa3ab;
-  --faint: #6f97a0;
-  --line: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.12);
-  --accent-ink: #46d6c4;
-  --seal-ink: #37a3b8;
-  --warn-ink: #e0b06a;
-  --accent: #46d6c4;
-  --accent-2: #7ff0e0;
-  --seal: #37a3b8;
-  --ok: #5fcf9f;
-  --warn: #e0b06a;
-  color-scheme: dark;
-}
-
-[data-theme='amethyst'] {
-  --bg: #120e22;
-  --bg-2: #1a1430;
-  --surface: rgba(255, 255, 255, 0.05);
-  --surface-2: rgba(255, 255, 255, 0.08);
-  --ink: #e7e0f5;
-  --muted: #a596c4;
-  --faint: #9686b8;
-  --line: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.12);
-  --accent-ink: #a482f0;
-  --seal-ink: #8a5cd6;
-  --warn-ink: #e0b06a;
-  --accent: #a482f0;
-  --accent-2: #c7adff;
-  --seal: #8a5cd6;
-  --ok: #6fcf9f;
-  --warn: #e0b06a;
-  color-scheme: dark;
-}
-
-[data-theme='frost'] {
-  --bg: #eaf1f8;
-  --bg-2: #f6fafd;
-  --surface: rgba(255, 255, 255, 0.55);
-  --surface-2: rgba(255, 255, 255, 0.4);
-  --ink: #1c2738;
-  --muted: #56667d;
-  --faint: #5f6b7a;
-  --line: rgba(255, 255, 255, 0.78);
-  --border: rgba(255, 255, 255, 0.78);
-  --accent-ink: #1c6fb5;
-  --seal-ink: #b23c30;
-  --warn-ink: #8f5c1d;
-  --accent: #2f8fe0;
-  --accent-2: #5cb3f0;
-  --seal: #d1564a;
-  --ok: #2f9e6f;
-  --warn: #d9912e;
-  color-scheme: light;
-}
-
-/* 角色归属色（产品铁律：万界=金，本作原生=印章红） */
+/* 角色归属色（产品铁律：万界=主色，本作原生=印章红） */
 :root {
   --char-wanjie: var(--accent);
   --char-native: var(--seal);
