@@ -2923,3 +2923,179 @@ select:focus {
     position: fixed;
   }
 }
+
+
+/* ===== v9 悬浮文字导航：删除菜单盒子，杂志式编辑排版（2026-09-22） ===== */
+
+.sidebar .brand-en {
+  display: none;
+}
+
+@media (min-width: 761px) {
+  .app-shell {
+    grid-template-columns: 264px 1fr;
+  }
+
+  /* 侧栏不再是盒子：透明、无边、无影，文字直接浮在晨光渐变上 */
+  .sidebar {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-right: none;
+    box-shadow: none;
+    padding: 50px 0 36px 48px;
+    /* 恢复浅色语义变量（v3 深色面板层已被架空） */
+    --ink: #262040;
+    --muted: #6f6790;
+    --faint: #8b84ab;
+    --bg: rgba(255, 255, 255, 0.55);
+    --bg-2: rgba(255, 255, 255, 0.72);
+    --surface: rgba(255, 255, 255, 0.5);
+    --surface-2: rgba(255, 255, 255, 0.75);
+    --line: rgba(38, 32, 64, 0.12);
+    --border: rgba(38, 32, 64, 0.1);
+    --seal: #b3382e;
+  }
+
+  /* 品牌：竖排书脊 — 圆印 + 竖排宋体「万象」+ 竖排小字刊号 */
+  .sidebar .brand-seal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 0;
+    border: none;
+    margin: 0;
+  }
+  .sidebar .seal {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--ink) 32%, transparent);
+    color: var(--ink);
+  }
+  .sidebar .brand-seal .brand {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 0.44em;
+    color: var(--ink);
+  }
+  .sidebar .brand-en {
+    display: block;
+    writing-mode: vertical-rl;
+    font-size: 9.5px;
+    letter-spacing: 0.42em;
+    color: var(--faint);
+    margin-top: 4px;
+  }
+
+  /* 目录：刊号 + 宋体大字，宽字距，悬停右滑 */
+  .sidebar .side-nav {
+    justify-content: flex-start;
+    margin-top: 56px;
+    gap: 24px;
+  }
+  .sidebar .side-link {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    padding: 0 0 0 2px;
+    border-radius: 0;
+    font-size: 17px;
+    letter-spacing: 0.3em;
+    color: color-mix(in srgb, var(--ink) 44%, transparent);
+    transition:
+      transform 0.32s cubic-bezier(0.22, 0.8, 0.3, 1),
+      color 0.25s ease;
+  }
+  .sidebar .side-link::before {
+    content: none;
+  }
+  .sidebar .side-link .nv-idx {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+    transition: color 0.25s ease;
+  }
+  .sidebar .side-link:hover {
+    background: none;
+    transform: translateX(7px);
+    color: var(--ink);
+  }
+  .sidebar .side-link:hover .nv-idx {
+    color: var(--accent);
+  }
+  /* 当前页：右滑 + 主题色刊号 + 字下一道细线，像校样笔 */
+  .sidebar .side-link.active {
+    background: none;
+    box-shadow: none;
+    font-weight: 500;
+    color: var(--ink);
+    transform: translateX(7px);
+  }
+  .sidebar .side-link.active .nv-idx {
+    color: var(--accent);
+  }
+  .sidebar .side-link.active .nv-txt {
+    padding-bottom: 7px;
+    background: linear-gradient(var(--accent), var(--accent)) left 100% / 100% 1px
+      no-repeat;
+  }
+
+  /* 底部工具：去卡片化，细线圆框幽灵钮 */
+  .side-foot {
+    border-top: none;
+    padding: 0;
+    gap: 12px;
+  }
+  .side-foot .theme-ic,
+  .side-foot .avatar-btn {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+    color: var(--muted);
+  }
+  .side-foot .theme-ic:hover,
+  .side-foot .avatar-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .side-foot .lang-select {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* 内容区：盒子消失后让版面自己呼吸 */
+  .content {
+    max-width: 1320px;
+    padding: 46px 54px 64px;
+  }
+}
+
+/* 移动端抽屉：保留玻璃面板（此时需要可读性），刊号目录同样适用 */
+@media (max-width: 760px) {
+  .sidebar .side-link {
+    display: flex;
+    align-items: baseline;
+    gap: 13px;
+  }
+  .sidebar .side-link::before {
+    content: none;
+  }
+  .sidebar .side-link .nv-idx {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 10px;
+    color: var(--faint);
+  }
+  .sidebar .side-link.active .nv-idx {
+    color: var(--accent);
+  }
+}

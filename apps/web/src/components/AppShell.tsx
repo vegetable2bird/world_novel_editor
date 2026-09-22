@@ -39,9 +39,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     setNavOpen(false);
   }, [loc.pathname]);
 
-  const navNodes = NAV.map((n) => (
+  const navNodes = NAV.map((n, i) => (
     <NavLink key={n.to} to={n.to} className={({ isActive }) => 'side-link' + (isActive ? ' active' : '')}>
-      {t('nav.' + n.key)}
+      <span className="nv-idx">{String(i + 1).padStart(2, '0')}</span>
+      <span className="nv-txt">{t('nav.' + n.key)}</span>
     </NavLink>
   ));
 
@@ -57,6 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="brand-seal">
           <span className="seal">象</span>
           <span className="brand">万象</span>
+          <span className="brand-en">WANXIANG&nbsp;ATELIER</span>
           <button className="side-close" onClick={() => setNavOpen(false)} title="关闭">
             ✕
           </button>
