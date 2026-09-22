@@ -30,6 +30,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     setNavOpen(false);
   }, [loc.pathname]);
 
+  // 写作台沉浸模式：打开章节后隐藏整个壳层，只留纸和光标
+  const focusMode = loc.pathname === '/editor' && !!new URLSearchParams(loc.search).get('chapter');
+
   const navNodes = NAV.map((n, i) => (
     <NavLink key={n.to} to={n.to} className={({ isActive }) => 'side-link' + (isActive ? ' active' : '')}>
       <span className="nv-idx">{String(i + 1).padStart(2, '0')}</span>
@@ -38,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   ));
 
   return (
-    <div className={'app-shell' + (navOpen ? ' nav-open' : '')}>
+    <div className={'app-shell' + (navOpen ? ' nav-open' : '') + (focusMode ? ' focus-mode' : '')}>
       <Ripple />
       <div className="nav-scrim" onClick={() => setNavOpen(false)} />
       <button className="nav-fab" onClick={() => setNavOpen((v) => !v)} title="目录">

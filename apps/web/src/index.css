@@ -3256,3 +3256,287 @@ select:focus {
     top: 42px;
   }
 }
+
+
+/* ===== v13 书房模式：写作台沉浸码字（2026-09-22） ===== */
+
+/* 进入章节后壳层隐去：无侧栏、无留白，整屏都是纸 */
+@media (min-width: 761px) {
+  .app-shell.focus-mode {
+    grid-template-columns: 1fr;
+  }
+  .app-shell.focus-mode .sidebar {
+    display: none;
+  }
+}
+.app-shell.focus-mode .content {
+  max-width: none;
+  padding: 0;
+}
+
+.writing-room {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* 浮动章节钮：毛玻璃小胶囊，浮在纸的左上角 */
+.wr-drawer-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 8px 26px rgba(88, 66, 150, 0.14);
+  color: var(--ink);
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.wr-drawer-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(88, 66, 150, 0.2);
+}
+.wr-drawer-btn .wr-bars {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+/* 章节抽屉 */
+.wr-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  background: rgba(38, 32, 64, 0.18);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.wr-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 90;
+  width: 304px;
+  max-width: 86vw;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 18px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 18px 0 50px rgba(90, 70, 150, 0.14);
+  transform: translateX(-106%);
+  transition: transform 0.34s cubic-bezier(0.22, 0.8, 0.3, 1);
+  overflow-y: auto;
+}
+.wr-drawer.open {
+  transform: translateX(0);
+}
+.wr-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.wr-book {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.wr-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.wr-close:hover {
+  color: var(--ink);
+}
+.wr-chap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wr-chap {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+.wr-chap:hover {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.wr-chap.active {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow: 0 6px 18px rgba(88, 66, 150, 0.1);
+}
+.wr-chap-t {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.wr-chap.active .wr-chap-t {
+  color: var(--accent);
+}
+.wr-chap-m {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.wr-chap-del {
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.wr-chap:hover .wr-chap-del {
+  opacity: 1;
+}
+.wr-chap-del:hover {
+  color: #c0455a;
+}
+
+/* 书页：中央 760px 内容列，宋体大字号宽行距 */
+.wr-page {
+  flex: 1;
+  width: min(760px, calc(100% - 44px));
+  margin: 0 auto;
+  padding: 92px 0 48px;
+  display: flex;
+  flex-direction: column;
+}
+.wr-kicker {
+  text-align: center;
+  font-size: 11.5px;
+  letter-spacing: 0.3em;
+  color: var(--faint);
+  margin-bottom: 26px;
+}
+.wr-title {
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: center;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 27px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  padding: 0 0 22px;
+}
+.wr-title::placeholder {
+  color: color-mix(in srgb, var(--ink) 26%, transparent);
+}
+.wr-title:focus {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+.wr-body {
+  flex: 1;
+  min-height: 46vh;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 17.5px;
+  line-height: 2.15;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
+  caret-color: var(--accent);
+  padding: 6px 2px;
+}
+.wr-body:focus {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+/* 写作页焦点只靠光标指示，不要焦点环 */
+.wr-body:focus-visible,
+.wr-title:focus-visible {
+  outline: none;
+}
+.wr-body::placeholder {
+  color: color-mix(in srgb, var(--ink) 26%, transparent);
+}
+
+/* 底部细状态栏 */
+.wr-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 14px 16px 18px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.wr-back {
+  position: absolute;
+  left: 22px;
+  bottom: 12px;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 6px 8px;
+  transition: color 0.18s ease;
+}
+.wr-back:hover {
+  color: var(--accent);
+}
+.wr-stat.plus {
+  color: var(--accent);
+}
+.wr-stat.neg {
+  color: var(--muted);
+}
+.wr-stat.err {
+  color: #c0455a;
+}
+
+@media (max-width: 760px) {
+  .wr-page {
+    padding-top: 86px;
+  }
+  .wr-back {
+    display: none;
+  }
+  .wr-status {
+    gap: 14px;
+    font-size: 11.5px;
+  }
+}
