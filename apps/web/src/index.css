@@ -3207,3 +3207,12 @@ select:focus {
     padding: 4px 9px;
   }
 }
+
+
+/* ===== v11 内容区放宽：近全幅版面（2026-09-22） ===== */
+@media (min-width: 761px) {
+  .content {
+    max-width: 1560px;
+    padding: 46px 44px 64px 48px;
+  }
+}
