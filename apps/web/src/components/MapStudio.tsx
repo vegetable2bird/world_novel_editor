@@ -1,24 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as echarts from 'echarts/core';
-import { ScatterChart } from 'echarts/charts';
 import { GeoComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEntities, useCreateEntity, useUpdateEntity, useDeleteEntity } from '../hooks/useEntities';
 import type { WorldEntity } from '../api/types';
 import { generate, defaultRegionNames, type GenParams } from '../lib/worldgen';
 
-echarts.use([ScatterChart, GeoComponent, TooltipComponent, CanvasRenderer]);
-
-/* 地貌配色（曦光幻想调） */
-const CLASS_STYLE: Record<string, { color: string; label: string }> = {
-  deep: { color: '#6f83c4', label: '深海' },
-  sea: { color: '#8fa8dd', label: '海洋' },
-  beach: { color: '#e6d7b4', label: '滩涂' },
-  grass: { color: '#a9cfa0', label: '原野' },
-  forest: { color: '#699e70', label: '森林' },
-  rock: { color: '#9a8bb0', label: '山岩' },
-  snow: { color: '#f4f0fa', label: '雪峰' },
-};
+echarts.use([GeoComponent, TooltipComponent, CanvasRenderer]);
 
 interface MapV2 {
   v: 2;
@@ -27,6 +15,8 @@ interface MapV2 {
   parentRegion: string | null;
   params: GenParams;
   regionNames: string[];
+  /** 详细地势描述（水网 / 山脉 / 植被等文字设定） */
+  desc?: string;
 }
 
 function parseMap(e: WorldEntity): MapV2 | null {
@@ -39,7 +29,7 @@ function parseMap(e: WorldEntity): MapV2 | null {
 }
 
 const randSeed = () => Math.floor(Math.random() * 1e9);
-const DEFAULT_PARAMS: GenParams = { seed: 42, sea: 0.46, freq: 1.2, mount: 0.45, forest: 0.4 };
+const DEFAULT_PARAMS: GenParams = { seed: 42, sea: 0.5, freq: 1.0 };
 
 export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; factions: WorldEntity[]; onOpenFac?: (id: string) => void }) {
   const { data: entities } = useEntities(worldId);
@@ -108,8 +98,17 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
   useEffect(() => {
     const c = chart.current;
     if (!c) return;
+    // 全是海洋时不注册空地图，避免 echarts 空 geo 崩溃
+    if (!gen.geo.features.length) {
+      c.clear();
+      return;
+    }
     const mapName = 'wxmap_' + draft.params.seed;
     echarts.registerMap(mapName, gen.geo as never);
+    const nameOf = (feat: string | undefined) => {
+      const i = feat && feat.length > 1 ? Number(feat.slice(1)) : NaN;
+      return Number.isFinite(i) ? (regionNames[i] ?? '') : '';
+    };
     c.setOption(
       {
         geo: {
@@ -117,37 +116,32 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
           roam: true,
           layoutCenter: ['50%', '50%'],
           layoutSize: '100%',
-          itemStyle: { areaColor: 'transparent', borderColor: 'transparent' },
-          regions: Object.entries(CLASS_STYLE).map(([k, v]) => ({
-            name: k,
-            itemStyle: { areaColor: v.color, borderColor: 'rgba(255,255,255,.55)', borderWidth: 0.6 },
-          })),
-          emphasis: { disabled: true },
+          itemStyle: {
+            areaColor: '#edebf6',
+            borderColor: 'rgba(255,255,255,0.95)',
+            borderWidth: 1.6,
+            shadowBlur: 10,
+            shadowColor: 'rgba(70,55,130,0.10)',
+          },
+          label: {
+            show: true,
+            formatter: (p: { name?: string }) => nameOf(p.name),
+            fontSize: 12.5,
+            color: '#57507a',
+            fontFamily: 'Songti SC, STSong, SimSun, serif',
+            letterSpacing: 2,
+          },
+          emphasis: {
+            label: { color: '#262040', fontWeight: 600 },
+            itemStyle: { areaColor: '#f6e3a3' },
+          },
           silent: false,
         },
         tooltip: {
           show: true,
-          formatter: (p: { name?: string }) => CLASS_STYLE[p.name ?? '']?.label ?? '',
+          formatter: (p: { name?: string }) => nameOf(p.name),
         },
-        series: [
-          {
-            type: 'scatter',
-            coordinateSystem: 'geo',
-            symbolSize: 5,
-            itemStyle: { color: '#4b3a86', borderColor: '#fff', borderWidth: 1.2 },
-            label: {
-              show: true,
-              position: 'top',
-              formatter: (p: { dataIndex: number }) => regionNames[p.dataIndex] ?? '',
-              fontSize: 12,
-              color: '#3a3157',
-              fontFamily: 'Songti SC, STSong, SimSun, serif',
-              letterSpacing: 2,
-            },
-            data: gen.continents.map((c2) => ({ value: [c2.centroid[0], c2.centroid[1]] })),
-            z: 10,
-          },
-        ],
+        series: [],
       } as never,
       true,
     );
@@ -183,8 +177,6 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
   const sliders: { k: keyof GenParams; label: string; min: number; max: number; step: number }[] = [
     { k: 'sea', label: '海平面', min: 0.3, max: 0.6, step: 0.005 },
     { k: 'freq', label: '碎片化', min: 0.5, max: 3, step: 0.05 },
-    { k: 'mount', label: '山脉强度', min: 0, max: 1, step: 0.02 },
-    { k: 'forest', label: '森林覆盖', min: 0, max: 1, step: 0.02 },
   ];
 
   return (
@@ -263,7 +255,7 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
                 value={draft.params[s.k]}
                 onChange={(e) => patchParams(s.k, Number(e.target.value))}
               />
-              <span className="ms-sv">{draft.params[s.k].toFixed(2)}</span>
+              <span className="ms-sv">{(draft.params[s.k] ?? 0).toFixed(2)}</span>
             </div>
           ))}
           <div className="ms-row" style={{ marginTop: 8 }}>
@@ -303,18 +295,22 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
             </div>
           ))}
         </div>
+
+        <div className="ms-sec">
+          <div className="ms-label">地势描述</div>
+          <textarea
+            className="ms-desc"
+            rows={4}
+            placeholder="例如：北境雪峰连绵，中部平原开阔，东南多湖泽；灵脉自西北向东南汇聚……"
+            value={draft.desc ?? ''}
+            onChange={(e) => setDraft((d) => ({ ...d, desc: e.target.value }))}
+          />
+        </div>
       </div>
 
       {/* 右：地图 */}
       <div className="ms-stage">
         <div ref={chartRef} className="ms-chart" />
-        <div className="ms-legend">
-          {Object.values(CLASS_STYLE).map((v) => (
-            <span key={v.label} className="ms-chip">
-              <i style={{ background: v.color }} /> {v.label}
-            </span>
-          ))}
-        </div>
         {factions.length > 0 && (
           <div className="ms-fac">
             势力：

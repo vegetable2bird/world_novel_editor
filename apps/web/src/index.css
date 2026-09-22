@@ -3760,3 +3760,78 @@ select option {
     height: 420px;
   }
 }
+
+
+
+/* ===== v17 轻量地图 + 书脊徽记居上 + 用户弹窗修复（2026-09-22） ===== */
+
+/* 地势描述文本框 */
+.ms-desc {
+  width: 100%;
+  resize: vertical;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ms-desc:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.ms-desc::placeholder {
+  color: var(--faint);
+}
+
+/* 浅色区块风：地图卡底更白净，像参考图的纸感 */
+.ms-chart {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+/* 徽记放「万象」上方（桌面书脊） */
+@media (min-width: 761px) {
+  .sidebar .side-top .brand-seal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .sidebar .side-top .brand-seal .brand {
+    margin-top: 0;
+  }
+  .sidebar .side-top .brand-mark {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 2px;
+    filter: drop-shadow(0 8px 18px rgba(109, 79, 208, 0.22));
+  }
+  .sidebar .side-top .brand-en {
+    margin-top: 0;
+  }
+}
+
+/* 用户弹窗：向左溢出屏幕的老问题——改为从头像向右展开，覆盖到内容区上方 */
+.sidebar .side-top .user-pop,
+.sidebar .user-pop {
+  left: 0;
+  right: auto;
+  top: 44px;
+  bottom: auto;
+  width: 228px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 22px 56px rgba(38, 24, 84, 0.22);
+}
+@media (max-width: 760px) {
+  .sidebar .side-top .user-pop,
+  .sidebar .user-pop {
+    top: 42px;
+  }
+}

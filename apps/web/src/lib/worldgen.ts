@@ -1,7 +1,8 @@
 /**
- * worldgen —— 万象随机地图生成器
- * 种子化值噪声高度场 → 移动正方形等值线 → GeoJSON（可直接 registerMap 给 ECharts）
+ * worldgen —— 万象随机地图生成器（v17 轻量版）
+ * 种子化值噪声高度场 → 单次等值线描出各洲轮廓 → GeoJSON（registerMap 给 ECharts）
  * 全部确定性：同 seed + 同参数 ⇒ 同地图，因此落库只存参数不存几何。
+ * 只画陆地洲块（浅色区块风），水域/植被等分层地势已移除，改用文字描述。
  */
 
 export interface GenParams {
@@ -10,10 +11,10 @@ export interface GenParams {
   sea: number;
   /** 碎片化（噪声频率）0.5–3.0，越大越破碎 */
   freq: number;
-  /** 山脉强度 0–1 */
-  mount: number;
-  /** 森林覆盖 0–1 */
-  forest: number;
+  /** @deprecated v17 起不再参与生成，仅为兼容旧存档保留 */
+  mount?: number;
+  /** @deprecated v17 起不再参与生成，仅为兼容旧存档保留 */
+  forest?: number;
 }
 
 export interface ContinentInfo {
@@ -83,18 +84,17 @@ function buildHeight(p: GenParams): Float32Array {
       const nx = (x / GW) * p.freq * 3;
       const ny = (y / GH) * p.freq * 3;
       const base = fbm(nx, ny, p.seed);
-      const rg = 1 - Math.abs(2 * fbm(nx * 1.9 + 31.7, ny * 1.9 + 11.3, p.seed + 911) - 1);
       // 边缘轻微下压，避免陆地顶满边界
       const ex = Math.min(x / GW, 1 - x / GW);
       const ey = Math.min(y / GH, 1 - y / GH);
       const edge = clamp01(Math.min(ex, ey) * 6);
-      g[y * GW + x] = clamp01((base * 0.72 + rg * rg * p.mount * 0.62 - 0.08) * (0.55 + 0.45 * edge));
+      g[y * GW + x] = clamp01((base * 1.04 + 0.03) * (0.55 + 0.45 * edge));
     }
   }
   return g;
 }
 
-/* ---------- 移动正方形等值线 ---------- */
+/* ---------- 移动正方形等值线（只跑一次：海平面） ---------- */
 type Pt = [number, number];
 
 function contour(grid: Float32Array, w: number, h: number, t: number): Pt[][] {
@@ -165,20 +165,22 @@ function toGeo(p: Pt): [number, number] {
   return [+(p[0] - 1).toFixed(3), +(GH - (p[1] - 1)).toFixed(3)];
 }
 
-function feature(name: string, loops: Pt[][]): unknown | null {
-  const polys: number[][][][] = [];
-  // 简单按面积过滤碎屑
-  const area = (r: Pt[]) => {
-    let s = 0;
-    for (let i = 0; i < r.length - 1; i++) s += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
-    return Math.abs(s) / 2;
-  };
-  const outers = loops.filter((r) => area(r) > 0.35);
-  if (!outers.length) return null;
-  for (const r of outers) {
-    polys.push([r.map(toGeo)]);
+/** 环面积（带符号，仅用于判别尺寸） */
+function ringArea(r: Pt[]) {
+  let s = 0;
+  for (let i = 0; i < r.length - 1; i++) s += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
+  return Math.abs(s) / 2;
+}
+
+/** 射线法：点是否在环内 */
+function pointInRing(pt: Pt, ring: Pt[]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if (yi > pt[1] !== yj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) inside = !inside;
   }
-  return { type: 'Feature', properties: { name }, geometry: { type: 'MultiPolygon', coordinates: polys } };
+  return inside;
 }
 
 /* ---------- 主入口 ---------- */
@@ -186,71 +188,93 @@ export function generate(p: GenParams): GenResult {
   const h = buildHeight(p);
   const padW = GW + 2;
   const padH = GH + 2;
-  const mkPad = (src: (x: number, y: number) => number) => {
-    const g = new Float32Array(padW * padH).fill(-1);
-    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) g[(y + 1) * padW + (x + 1)] = src(x, y);
-    return g;
-  };
+  const pad = new Float32Array(padW * padH).fill(-1);
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) pad[(y + 1) * padW + (x + 1)] = h[y * GW + x];
 
-  const tDeep = 0;
-  const tSea = p.sea - 0.14;
-  const tLand = p.sea;
-  const tBeach = p.sea + 0.012;
-  const tRock = 0.6;
-  const tSnow = 0.8;
-  const ft = 1 - p.forest * 0.55;
-
-  const forestNoise = (x: number, y: number) => fbm((x / GW) * p.freq * 5 + 77, (y / GH) * p.freq * 5 + 41, p.seed + 4242, 3);
-
-  const grids: [string, Float32Array, number][] = [
-    ['deep', mkPad((x, y) => h[y * GW + x]), tDeep],
-    ['sea', mkPad((x, y) => h[y * GW + x]), tSea],
-    ['beach', mkPad((x, y) => h[y * GW + x]), tLand],
-    ['grass', mkPad((x, y) => h[y * GW + x]), tBeach],
-    ['forest', mkPad((x, y) => (h[y * GW + x] >= p.sea && forestNoise(x, y) >= ft ? 1 : -1)), 0],
-    ['rock', mkPad((x, y) => h[y * GW + x]), tRock],
-    ['snow', mkPad((x, y) => h[y * GW + x]), tSnow],
-  ];
-
-  const features: unknown[] = [];
-  for (const [name, g, t] of grids) {
-    const f = feature(name, contour(g, padW, padH, t));
-    if (f) features.push(f);
-  }
-
-  // 洲：陆地连通域
-  const land = new Uint8Array(GW * GH);
-  for (let i = 0; i < GW * GH; i++) land[i] = h[i] >= p.sea ? 1 : 0;
-  const seen = new Uint8Array(GW * GH);
-  const continents: ContinentInfo[] = [];
-  const DIRS = [1, -1, GW, -GW];
-  for (let i = 0; i < GW * GH; i++) {
-    if (!land[i] || seen[i]) continue;
+  /* 洲：陆地连通域（在 pad 栅格上直接 BFS，顺便拿 contId 给轮廓归属） */
+  const contId = new Int32Array(padW * padH).fill(-1);
+  const raw: { cells: number; sx: number; sy: number }[] = [];
+  const DIRS = [1, -1, padW, -padW];
+  for (let i = 0; i < padW * padH; i++) {
+    if (pad[i] < p.sea || contId[i] !== -1) continue;
+    const id = raw.length;
     const stack = [i];
-    seen[i] = 1;
-    let cells = 0;
-    let sx = 0;
-    let sy = 0;
+    contId[i] = id;
+    let cells = 0, sx = 0, sy = 0;
     while (stack.length) {
       const cur = stack.pop()!;
-      const cx = cur % GW;
-      const cy = (cur / GW) | 0;
-      cells++;
-      sx += cx;
-      sy += cy;
+      const cx = cur % padW;
+      const cy = (cur / padW) | 0;
+      cells++; sx += cx; sy += cy;
       for (const d of DIRS) {
         const ni = cur + d;
-        if (ni < 0 || ni >= GW * GH) continue;
-        if ((d === 1 && cx === GW - 1) || (d === -1 && cx === 0)) continue;
-        if (land[ni] && !seen[ni]) {
-          seen[ni] = 1;
+        if (ni < 0 || ni >= padW * padH) continue;
+        if ((d === 1 && cx === padW - 1) || (d === -1 && cx === 0)) continue;
+        if (pad[ni] >= p.sea && contId[ni] === -1) {
+          contId[ni] = id;
           stack.push(ni);
         }
       }
     }
-    if (cells >= 14) continents.push({ centroid: [sx / cells, GH - sy / cells], cells });
+    raw.push({ cells, sx, sy });
   }
-  continents.sort((a, b) => b.cells - a.cells);
+
+  // 过滤碎屿并按面积排序
+  const order = raw
+    .map((r, id) => ({ id, ...r }))
+    .filter((r) => r.cells >= 10)
+    .sort((a, b) => b.cells - a.cells);
+  const remap = new Map<number, number>();
+  order.forEach((r, idx) => remap.set(r.id, idx));
+
+  const continents: ContinentInfo[] = order.map((r) => ({
+    centroid: [+(r.sx / r.cells - 1).toFixed(1), +(GH - (r.sy / r.cells - 1)).toFixed(1)],
+    cells: r.cells,
+  }));
+
+  /* 等值线 → 每洲一个 MultiPolygon（含湖洞） */
+  const loops = contour(pad, padW, padH, p.sea);
+  const probe = (r: Pt[]): Pt => {
+    let sx = 0, sy = 0;
+    for (const q of r) { sx += q[0]; sy += q[1]; }
+    return [sx / r.length, sy / r.length];
+  };
+
+  interface Ring { loop: Pt[]; probe: Pt; cont: number }
+  const outers: Ring[] = [];
+  const holes: Ring[] = [];
+  for (const loop of loops) {
+    if (ringArea(loop) < 0.4) continue; // 碎屑
+    const pb = probe(loop);
+    const cx = Math.min(padW - 1, Math.max(0, Math.floor(pb[0])));
+    const cy = Math.min(padH - 1, Math.max(0, Math.floor(pb[1])));
+    const cid = contId[cy * padW + cx];
+    if (cid === -1 || !remap.has(cid)) {
+      holes.push({ loop, probe: pb, cont: -1 }); // 湖中洞（不在任何洲的陆上）
+    } else if (pad[cy * padW + cx] >= p.sea) {
+      outers.push({ loop, probe: pb, cont: remap.get(cid)! });
+    } else {
+      holes.push({ loop, probe: pb, cont: remap.get(cid)! });
+    }
+  }
+
+  const features: unknown[] = [];
+  for (let idx = 0; idx < continents.length; idx++) {
+    const mine = outers.filter((o) => o.cont === idx);
+    if (!mine.length) continue;
+    const polys: number[][][][] = [];
+    for (const o of mine) {
+      const inner = holes
+        .filter((hh) => (hh.cont === idx || hh.cont === -1) && pointInRing(hh.probe, o.loop))
+        .map((hh) => hh.loop.map(toGeo));
+      polys.push([o.loop.map(toGeo), ...inner]);
+    }
+    features.push({
+      type: 'Feature',
+      properties: { name: 'c' + idx },
+      geometry: { type: 'MultiPolygon', coordinates: polys },
+    });
+  }
 
   return { geo: { type: 'FeatureCollection', features }, continents };
 }
