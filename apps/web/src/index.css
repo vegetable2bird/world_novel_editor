@@ -1686,10 +1686,8 @@ textarea {
   --surface-2: rgba(255, 255, 255, 0.09);
   --line: rgba(255, 255, 255, 0.1);
   --border: rgba(255, 255, 255, 0.09);
-  --accent: #b7a3f7;
-  --accent-2: #d9ccff;
-  --accent-ink: #e4dbff;
   --seal: #e08a80;
+  /* v5 起不锁 --accent，色盘主题色贯通侧栏 */
 }
 .sidebar .brand-seal {
   padding: 2px 6px 14px;
@@ -1991,10 +1989,8 @@ body {
   --surface-2: rgba(255, 255, 255, 0.75);
   --line: rgba(38, 32, 64, 0.12);
   --border: rgba(38, 32, 64, 0.1);
-  --accent: #6d4fd0;
-  --accent-2: #a78bfa;
-  --accent-ink: #452aa8;
   --seal: #b3382e;
+  /* 注意：不锁 --accent，让色盘选的主题色贯通侧栏 */
 }
 .sidebar .brand-seal {
   border-bottom-color: rgba(38, 32, 64, 0.08);
@@ -2095,5 +2091,110 @@ select:focus {
   .page-head .primary {
     width: auto;
     align-self: flex-start;
+  }
+}
+
+
+/* ===== v5 排版层：主题色驱动界面 + 与登录页同源（2026-09-22） ===== */
+
+/* 全站水波背景（登录页同款 Ripple，画布沉底） */
+.app-shell {
+  position: relative;
+}
+.app-shell > .ripple-canvas {
+  z-index: 0;
+}
+.sidebar,
+.main-col {
+  position: relative;
+}
+
+/* 主按钮：主题色胶囊 —— 色盘一动，全站跟着变 */
+.primary {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.primary:hover:not(:disabled) {
+  opacity: 1;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* 页头落笔：分隔线、眉题、顶栏标题同用主题色系 */
+.page-head h2::after {
+  background: var(--accent);
+}
+.eyebrow {
+  color: var(--accent-ink);
+  letter-spacing: 0.3em;
+}
+.topbar .crumb {
+  color: var(--accent-ink);
+}
+.section-h::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin-right: 10px;
+  vertical-align: 2px;
+}
+
+/* 文字链接 hover 主题色 */
+.link {
+  transition: color 0.18s ease;
+}
+.link:hover {
+  color: var(--accent);
+}
+
+/* 页头更编辑感（与登录页宋体大字同源） */
+.page-head h2 {
+  font-size: 26px;
+  letter-spacing: 0.08em;
+}
+.page-head .muted {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  max-width: 640px;
+}
+
+/* 工作台翅膀横幅：白玻璃承翼 */
+.hero-wing {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: 0 10px 34px rgba(88, 66, 150, 0.08);
+  border-radius: 20px;
+  margin: 2px 0 30px;
+}
+.hero-wing .hero-inner {
+  padding: 38px 36px 32px;
+}
+.hero-wing .lede {
+  max-width: 560px;
+}
+
+/* 统计数字阴影微加强，主题色更挺 */
+.stat .n {
+  text-shadow: 0 4px 18px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* 写作台章节选中态透出主题色 */
+.ed-chap-item.active {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* 窄屏：翅膀横幅收敛 */
+@media (max-width: 760px) {
+  .hero-wing .hero-inner {
+    padding: 26px 20px 22px;
   }
 }

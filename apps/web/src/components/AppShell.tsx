@@ -5,6 +5,7 @@ import { useUi } from '../store/ui';
 import { THEMES, getTheme, applyAccent, getAccent, type ThemeName } from '../theme';
 import i18n, { SUPPORTED_LOCALES } from '../i18n';
 import { ColorWheel } from './ColorWheel';
+import { Ripple } from './Ripple';
 
 const DEFAULT_ACCENT = '#6d4fd0';
 
@@ -76,6 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={'app-shell' + (navOpen ? ' nav-open' : '')}>
+      <Ripple />
       <div className="nav-scrim" onClick={() => setNavOpen(false)} />
       <aside className="sidebar">
         <div className="brand-seal">

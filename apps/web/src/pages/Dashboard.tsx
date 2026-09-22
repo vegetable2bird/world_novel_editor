@@ -4,6 +4,7 @@ import { useWorlds } from '../hooks/useWorlds';
 import { useBooks } from '../hooks/useBooks';
 import { useCharacters } from '../hooks/useCharacters';
 import { useUi } from '../store/ui';
+import { Wings } from '../components/Wings';
 
 function ago(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -42,10 +43,16 @@ export function Dashboard() {
 
   return (
     <section>
-      <div className="eyebrow">工作台</div>
-      <h1 className="title serif">欢迎回来，{name}</h1>
-      <div className="page-divider" />
-      <p className="lede">下面是你的创作概览与近期动态。（角色会在你的作品中参演，但角色的动态属于万界自身）</p>
+      <div className="hero-wing">
+        <Wings compact />
+        <div className="hero-inner">
+          <div className="eyebrow">工作台</div>
+          <h1 className="title serif">欢迎回来，{name}</h1>
+          <p className="lede" style={{ marginBottom: 0 }}>
+            下面是你的创作概览与近期动态。（角色会在你的作品中参演，但角色的动态属于万界自身）
+          </p>
+        </div>
+      </div>
 
       <div className="grid g3" style={{ marginBottom: 22 }}>
         <div className="card stat">
