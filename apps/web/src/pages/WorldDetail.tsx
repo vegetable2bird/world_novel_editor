@@ -476,42 +476,40 @@ export function WorldDetail() {
           ) : factions.length === 0 ? (
             <div className="dtable-empty">暂无势力 / 组织。点击下方新增，或在地图上放置。</div>
           ) : (
-            <div className="dtable-wrap">
-              <table className="dtable">
-                <thead>
-                  <tr>
-                    <th>势力 / 组织</th>
-                    <th>类型</th>
-                    <th>简介</th>
-                    <th>关系</th>
-                    <th className="col-act">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {factions.map((f) => {
-                    const ff = parse<FFac>(f.fields, { kind: '', desc: '', color: '#888', x: 0, y: 0 } as FFac);
-                    return (
-                      <tr key={f.id}>
-                        <td>
-                          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: ff.color, marginRight: 8 }} />
-                          <b>{f.name}</b>
-                        </td>
-                        <td><span className="pill">{ff.kind || '—'}</span></td>
-                        <td className="muted wrap" style={{ maxWidth: 300 }}>{ff.desc}</td>
-                        <td>{(facRelChips(f.id) as React.ReactNode) || <span className="muted">—</span>}</td>
-                        <td className="col-act">
-                          <button className="mini-btn" onClick={() => openFac(f.id)}>编辑</button>
-                          <button className="mini-btn" onClick={() => openRel(f.id)}>关系</button>
-                          <button className="mini-btn danger" onClick={() => deleteEntity.mutateAsync(f.id)}>删除</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="fac-grid">
+              {factions.map((f) => {
+                const ff = parse<FFac>(f.fields, { kind: '', desc: '', color: '#888', x: 0, y: 0 } as FFac);
+                const chips = facRelChips(f.id) as React.ReactNode[];
+                return (
+                  <div key={f.id} className="fac-card">
+                    <div className="fac-top">
+                      <div className="fac-dot" style={{ background: ff.color }}>
+                        {f.name.charAt(0)}
+                      </div>
+                      <div className="fac-id">
+                        <div className="fac-name">{f.name}</div>
+                        {ff.kind && <span className="pill">{ff.kind}</span>}
+                      </div>
+                    </div>
+                    <div className="fac-desc muted">{ff.desc || '（暂无简介）'}</div>
+                    <div className="fac-rel">{chips.length > 0 ? chips : <span className="muted">无外交关系</span>}</div>
+                    <div className="ch-acts">
+                      <button className="link" onClick={() => openFac(f.id)}>
+                        编辑
+                      </button>
+                      <button className="link" onClick={() => openRel(f.id)}>
+                        关系
+                      </button>
+                      <button className="link danger" onClick={() => deleteEntity.mutateAsync(f.id)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-          <button className="btn-add" style={{ marginTop: 6 }} onClick={() => openFac()}>
+          <button className="btn-add" style={{ marginTop: 12 }} onClick={() => openFac()}>
             ＋ 新增势力 / 组织
           </button>
         </div>
@@ -523,37 +521,35 @@ export function WorldDetail() {
           {skills.length === 0 ? (
             <div className="dtable-empty">暂无世界级技能。</div>
           ) : (
-            <div className="dtable-wrap">
-              <table className="dtable">
-                <thead>
-                  <tr>
-                    <th>技能</th>
-                    <th>说明</th>
-                    <th>等级</th>
-                    <th className="col-act">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {skills.map((s) => {
-                    const ff = parse<FSkill>(s.fields, { desc: '', level: 3 });
-                    return (
-                      <tr key={s.id}>
-                        <td><b>{s.name}</b></td>
-                        <td className="muted">{ff.desc}</td>
-                        <td>
-                          <span className="mini-bar"><i style={{ width: `${ff.level * 20}%` }} /></span> <span className="cs">L{ff.level}</span>
-                        </td>
-                        <td className="col-act">
-                          <button className="mini-btn danger" onClick={() => deleteEntity.mutateAsync(s.id)}>删除</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="sk-list">
+              {skills.map((s) => {
+                const ff = parse<FSkill>(s.fields, { desc: '', level: 3 });
+                return (
+                  <div key={s.id} className="sk-row">
+                    <div className="sk-main">
+                      <div className="sk-name">{s.name}</div>
+                      <div className="sk-desc muted">{ff.desc || '—'}</div>
+                    </div>
+                    <div className="sk-lv">
+                      <span className="mini-bar">
+                        <i style={{ width: `${ff.level * 20}%` }} />
+                      </span>
+                      <span className="cs">L{ff.level}</span>
+                    </div>
+                    <div className="sk-acts">
+                      <button className="link" onClick={() => openSkill(s.id)}>
+                        编辑
+                      </button>
+                      <button className="link danger" onClick={() => deleteEntity.mutateAsync(s.id)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-          <button className="btn-add" style={{ marginTop: 6 }} onClick={() => openSkill()}>＋ 新增技能</button>
+          <button className="btn-add" style={{ marginTop: 12 }} onClick={() => openSkill()}>＋ 新增技能</button>
           <div className="card" style={{ marginTop: 18 }}>
             <h3 className="section-h" style={{ marginTop: 0 }}>世界发展状况</h3>
             {Object.keys(devDims).length === 0 ? (
@@ -577,36 +573,30 @@ export function WorldDetail() {
           {genEntities.length === 0 ? (
             <div className="dtable-empty">暂无实体，可在「实体」中逐步补充。</div>
           ) : (
-            <div className="dtable-wrap">
-              <table className="dtable">
-                <thead>
-                  <tr>
-                    <th>名称</th>
-                    <th>类型</th>
-                    <th>描述</th>
-                    <th className="col-act">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {genEntities.map((e) => {
-                    const ff = parse<FEnt>(e.fields, { desc: '' });
-                    return (
-                      <tr key={e.id}>
-                        <td><b>{e.name}</b></td>
-                        <td><span className="pill">{e.type}</span></td>
-                        <td className="muted">{ff.desc}</td>
-                        <td className="col-act">
-                          <button className="mini-btn" onClick={() => openEnt(e.id)}>编辑</button>
-                          <button className="mini-btn danger" onClick={() => deleteEntity.mutateAsync(e.id)}>删除</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="ent-list">
+              {genEntities.map((e) => {
+                const ff = parse<FEnt>(e.fields, { desc: '' });
+                return (
+                  <div key={e.id} className="ent-row">
+                    <span className="pill">{e.type}</span>
+                    <div className="ent-main">
+                      <div className="ent-name">{e.name}</div>
+                      <div className="ent-desc muted">{ff.desc || '—'}</div>
+                    </div>
+                    <div className="ent-acts">
+                      <button className="link" onClick={() => openEnt(e.id)}>
+                        编辑
+                      </button>
+                      <button className="link danger" onClick={() => deleteEntity.mutateAsync(e.id)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-          <button className="btn-add" style={{ marginTop: 6 }} onClick={() => openEnt()}>＋ 新增实体</button>
+          <button className="btn-add" style={{ marginTop: 12 }} onClick={() => openEnt()}>＋ 新增实体</button>
         </div>
       )}
 
@@ -633,7 +623,10 @@ export function WorldDetail() {
                   <div className="tl-d">
                     <b>{e.title}</b>
                     {e.description ? <div className="muted">{e.description}</div> : null}
-                    <button className="mini-btn danger" style={{ marginTop: 6 }} onClick={() => deleteTimeline.mutateAsync(e.id)}>删除</button>
+                    <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
+                      <button className="link" onClick={() => openTl(e.id)}>编辑</button>
+                      <button className="link danger" onClick={() => deleteTimeline.mutateAsync(e.id)}>删除</button>
+                    </div>
                   </div>
                 </div>
               ))}
