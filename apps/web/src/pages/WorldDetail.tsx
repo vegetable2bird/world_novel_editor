@@ -17,17 +17,11 @@ import {
   useDeleteTimeline,
 } from '../hooks/useEntities';
 import { Modal, Field } from '../components/Modal';
+import { MapStudio } from '../components/MapStudio';
 import type { WorldEntity, EntityRelation, TimelineEvent } from '../api/types';
 
 // ===== 常量 =====
 const FAC_COLORS = ['#c8453a', '#d4af37', '#3a6ec8', '#5f9e6f', '#9b59b6', '#c77d3a'];
-const TERRAIN = [
-  { label: '平原', color: '#1d2740' },
-  { label: '丘陵', color: '#243353' },
-  { label: '山地', color: '#2f456b' },
-  { label: '高地', color: '#3a5a86' },
-  { label: '雪峰', color: '#557aa8' },
-];
 const FAC_KINDS = ['国家', '组织', '门派', '商会'];
 const REL_KINDS = ['中立', '同盟', '附庸', '敌对'];
 const ENTITY_TYPES = ['人物', '地点', '组织', '物品', '地理', '种族', '规则'];
@@ -45,11 +39,6 @@ interface FSkill {
 }
 interface FEnt {
   desc: string;
-}
-interface FMap {
-  w: number;
-  h: number;
-  terrain: number[];
 }
 interface FDev {
   dims: Record<string, number>;
@@ -90,7 +79,6 @@ export function WorldDetail() {
     () => (entities ?? []).filter((e) => !['faction', 'skill', 'map', 'dev'].includes(e.type)),
     [entities],
   );
-  const mapEntity = entities?.find((e) => e.type === 'map');
   const devEntity = entities?.find((e) => e.type === 'dev');
 
   const [tab, setTab] = useState('overview');
@@ -121,13 +109,6 @@ export function WorldDetail() {
     category: '',
     visibility: 'private',
   });
-
-  // 地图
-  const [map, setMap] = useState<FMap>({ w: 7, h: 5, terrain: Array(35).fill(0) });
-  const [placing, setPlacing] = useState(false);
-  useEffect(() => {
-    if (mapEntity) setMap(parse<FMap>(mapEntity.fields, { w: 7, h: 5, terrain: Array(35).fill(0) }));
-  }, [mapEntity]);
 
   // 表单草稿
   const [facForm, setFacForm] = useState<{ name: string; kind: string; desc: string; color: string }>({
@@ -199,34 +180,6 @@ export function WorldDetail() {
     setDevModal(true);
   }
 
-  function cycleCell(x: number, y: number) {
-    setMap((m) => {
-      const terrain = [...m.terrain];
-      const i = y * m.w + x;
-      terrain[i] = (terrain[i] + 1) % 5;
-      return { ...m, terrain };
-    });
-  }
-  async function saveMap() {
-    if (mapEntity) await updateEntity.mutateAsync({ id: mapEntity.id, fields: j(map) });
-    else await createEntity.mutateAsync({ type: 'map', name: '__map__', fields: j(map) });
-  }
-  function onCellClick(x: number, y: number) {
-    if (placing) {
-      const occ = factions.some((f) => {
-        const ff = parse<FFac>(f.fields, { x: 0, y: 0 } as FFac);
-        return ff.x === x && ff.y === y;
-      });
-      if (occ) {
-        alert('该格已有势力');
-        return;
-      }
-      setPlacing(false);
-      openFac(undefined, x, y);
-    } else {
-      cycleCell(x, y);
-    }
-  }
   async function saveFaction() {
     const nm = facForm.name.trim();
     if (!nm) return;
@@ -403,68 +356,7 @@ export function WorldDetail() {
       {/* 大陆地图 */}
       {tab === 'map' && (
         <div className="panel2 active">
-          <div
-            className="map"
-            style={{ gridTemplateColumns: `repeat(${map.w}, 1fr)` }}
-          >
-            {Array.from({ length: map.h }).map((_, y) =>
-              Array.from({ length: map.w }).map((__, x) => {
-                const h = map.terrain[y * map.w + x];
-                return (
-                  <div
-                    key={`${x}-${y}`}
-                    className="cell"
-                    style={{ background: TERRAIN[h].color }}
-                    onClick={() => onCellClick(x, y)}
-                    title={TERRAIN[h].label}
-                  >
-                    {TERRAIN[h].label}
-                  </div>
-                );
-              }),
-            )}
-            {factions.map((f) => {
-              const ff = parse<FFac>(f.fields, { x: 0, y: 0 } as FFac);
-              return (
-                <div
-                  key={f.id}
-                  className="ftok"
-                  style={{ left: `${((ff.x + 0.5) / map.w) * 100}%`, top: `${((ff.y + 0.5) / map.h) * 100}%`, background: ff.color }}
-                  onClick={() => openFac(f.id)}
-                  title={f.name}
-                >
-                  {f.name.charAt(0)}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button className="mini-btn" onClick={() => setPlacing((p) => !p)} style={placing ? { borderColor: 'var(--accent)' } : undefined}>
-              ＋ 在地图上放置势力
-            </button>
-            <button className="mini-btn" onClick={saveMap}>
-              💾 保存地图
-            </button>
-          </div>
-          <div className="map-hint">点击格子可循环切换地势（平原→丘陵→山地→高地→雪峰）；进入「放置势力」后点空格落子。势力圆点可点击编辑。</div>
-          <div id="facMapList">
-            {factions.length === 0 ? (
-              <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>尚未在地图上放置势力。</p>
-            ) : (
-              factions.map((f) => {
-                const ff = parse<FFac>(f.fields, { x: 0, y: 0 } as FFac);
-                return (
-                  <div key={f.id} className="rel" style={{ cursor: 'pointer' }} onClick={() => openFac(f.id)}>
-                    <div className="av" style={{ background: ff.color }}>{f.name.charAt(0)}</div>
-                    <div className="grow">
-                      <div style={{ fontWeight: 600 }}>{f.name}</div>
-                      <div className="rt">{ff.kind} · {TERRAIN[map.terrain[ff.y * map.w + ff.x]]?.label} · ({ff.x},{ff.y})</div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <MapStudio worldId={worldId} factions={factions} onOpenFac={(id) => openFac(id)} />
         </div>
       )}
 
