@@ -3216,3 +3216,43 @@ select:focus {
     padding: 46px 44px 64px 48px;
   }
 }
+
+
+/* ===== v12 书脊头简化：删印章与语系切换，头像置顶（2026-09-22） ===== */
+
+/* 桌面：头像居顶，其下竖排「万象」+ 竖排刊号 */
+@media (min-width: 761px) {
+  .sidebar .side-top {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 20px;
+  }
+  .sidebar .side-top .avatar-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  .sidebar .side-top .user-pop {
+    top: 44px;
+  }
+  .sidebar .side-top .brand-seal {
+    gap: 14px;
+  }
+}
+
+/* 移动端抽屉：头像左、品牌右，关闭钮仍在品牌行内 */
+@media (max-width: 760px) {
+  .sidebar .side-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .sidebar .side-top .avatar-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .sidebar .side-top .user-pop {
+    top: 42px;
+  }
+}
