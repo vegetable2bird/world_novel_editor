@@ -2198,3 +2198,386 @@ select:focus {
     padding: 26px 20px 22px;
   }
 }
+
+
+/* ===== v6 结构层：从「表格后台」到「编辑排版」（2026-09-22） ===== */
+
+/* —— 世界封面卡 —— */
+.wv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.wv-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 34px rgba(88, 66, 150, 0.08);
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  text-align: left;
+  font-family: inherit;
+}
+.wv-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(88, 66, 150, 0.15);
+}
+.wv-cover {
+  height: 92px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 36px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+.wv-body {
+  padding: 16px 18px 10px;
+}
+.wv-name {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+}
+.wv-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+.wv-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.wv-acts {
+  display: flex;
+  gap: 14px;
+  padding: 4px 18px 14px;
+}
+.wv-acts .link {
+  margin-top: 0;
+  font-size: 12.5px;
+}
+/* 空态建卡 */
+.wv-add {
+  width: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ink) 22%, transparent);
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--muted);
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.wv-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: none;
+}
+.wv-plus {
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* —— 书架（书籍） —— */
+.bk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+}
+.bk-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 34px rgba(88, 66, 150, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bk-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 42px rgba(88, 66, 150, 0.14);
+}
+.bk-cover {
+  width: 56px;
+  height: 74px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 24px;
+  box-shadow: 0 6px 16px rgba(88, 66, 150, 0.22);
+}
+.bk-main {
+  min-width: 0;
+}
+.bk-name {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+.bk-desc {
+  font-size: 12.5px;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bk-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.bk-acts {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.bk-write {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* —— 角色：分段切换 + 档案卡 —— */
+.ch-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 6px 0 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.ch-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.ch-tabs button:hover {
+  color: var(--ink);
+}
+.ch-tabs button.active {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(90, 70, 150, 0.12);
+}
+.ch-count {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg-2);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.ch-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 34px rgba(88, 66, 150, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ch-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 42px rgba(88, 66, 150, 0.14);
+}
+.ch-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-av {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.ch-av.wanjie {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.ch-av.native {
+  background: color-mix(in srgb, var(--seal) 12%, transparent);
+  color: var(--seal);
+  border: 1px solid color-mix(in srgb, var(--seal) 40%, transparent);
+}
+.ch-name {
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.ch-desc {
+  font-size: 12.5px;
+  margin-top: 12px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+.ch-meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 10px;
+  letter-spacing: 0.04em;
+}
+.ch-acts {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.ch-acts .link {
+  margin-top: 0;
+  font-size: 12.5px;
+}
+
+/* —— 设置：左导航 + 右内容 —— */
+.set-grid {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  gap: 26px;
+  align-items: start;
+  margin-top: 18px;
+}
+.set-nav {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.set-nav button {
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.set-nav button:hover {
+  color: var(--ink);
+}
+.set-nav button.active {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(90, 70, 150, 0.12);
+}
+
+/* —— 操作台：卡片带行动箭头 —— */
+.op {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.op::after {
+  content: '→';
+  color: var(--accent);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.op:hover::after {
+  transform: translateX(3px);
+}
+.op::after {
+  transition: transform 0.18s ease;
+}
+
+/* —— 窄屏：结构全部单列 —— */
+@media (max-width: 760px) {
+  .bk-row {
+    grid-template-columns: 44px 1fr;
+  }
+  .bk-acts {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .bk-cover {
+    width: 44px;
+    height: 58px;
+    font-size: 19px;
+  }
+  .set-grid {
+    grid-template-columns: 1fr;
+  }
+  .set-nav {
+    position: static;
+    flex-direction: row;
+  }
+  .set-nav button {
+    flex: 1;
+    text-align: center;
+  }
+}

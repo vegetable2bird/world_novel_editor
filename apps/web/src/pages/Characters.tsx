@@ -18,6 +18,8 @@ export function Characters() {
   const updateI = useUpdateInstance();
   const removeI = useDeleteInstance();
 
+  const [tab, setTab] = useState<'wanjie' | 'native'>('wanjie');
+
   const [editingW, setEditingW] = useState<Character | null>(null);
   const [openW, setOpenW] = useState(false);
   const [formW, setFormW] = useState<CreateCharacterInput>({ name: '' });
@@ -81,139 +83,100 @@ export function Characters() {
 
   return (
     <section>
-      {/* 万界角色 */}
+      {/* 页头：标题 + 动态主按钮 */}
       <div className="page-head">
         <div>
-          <h2>
-            <span className="badge badge-wanjie">{t('terms.wanjieCharacter')}</span> {t('characters.wanjieTitle')}
-          </h2>
-          <p className="muted">{t('characters.wanjieDesc')}</p>
+          <h2>角色管理</h2>
+          <p className="muted">万界角色是跨作品复用的活体资产；本作原生角色只属于某一本书。</p>
         </div>
-        <button className="primary" onClick={openCreateW}>
-          ＋ {t('characters.newWanjie')}
+        <button className="primary" onClick={tab === 'wanjie' ? openCreateW : openCreateI}>
+          ＋ {tab === 'wanjie' ? t('characters.newWanjie') : t('characters.newNative')}
         </button>
       </div>
 
-      <div className="dtable-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>{t('characters.name')}</th>
-              <th>{t('characters.archetype')}</th>
-              <th>{t('characters.bio')}</th>
-              <th>{t('characters.instances')}</th>
-              <th>{t('characters.trails')}</th>
-              <th className="col-actions">{t('actions.edit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {l1 && (
-              <tr>
-                <td colSpan={6} className="empty">
-                  …
-                </td>
-              </tr>
-            )}
-            {e1 && (
-              <tr>
-                <td colSpan={6} className="empty err">
-                  {t('common.error')}
-                </td>
-              </tr>
-            )}
-            {wanjie?.length === 0 && (
-              <tr>
-                <td colSpan={6} className="empty">
-                  {t('characters.emptyWanjie')}
-                </td>
-              </tr>
-            )}
+      {/* 分段切换 */}
+      <div className="ch-tabs">
+        <button className={tab === 'wanjie' ? 'active' : ''} onClick={() => setTab('wanjie')}>
+          <span className="badge badge-wanjie">万界</span> 活体角色
+          <span className="ch-count">{wanjie?.length ?? 0}</span>
+        </button>
+        <button className={tab === 'native' ? 'active' : ''} onClick={() => setTab('native')}>
+          <span className="badge badge-native">本作</span> 原生角色
+          <span className="ch-count">{instances?.length ?? 0}</span>
+        </button>
+      </div>
+
+      {/* 万界角色 */}
+      {tab === 'wanjie' && (
+        <>
+          {l1 && <div className="dtable-empty">…</div>}
+          {e1 && <div className="dtable-empty err">{t('common.error')}</div>}
+          {!l1 && !e1 && wanjie?.length === 0 && (
+            <div className="dtable-empty">{t('characters.emptyWanjie')}</div>
+          )}
+          <div className="ch-grid">
             {wanjie?.map((c) => (
-              <tr key={c.id}>
-                <td>{c.name}</td>
-                <td className="muted">{c.archetype || '—'}</td>
-                <td className="muted">{c.bio || '—'}</td>
-                <td>{c._count?.instances ?? 0}</td>
-                <td>{c._count?.trails ?? 0}</td>
-                <td className="col-actions">
+              <div key={c.id} className="ch-card">
+                <div className="ch-top">
+                  <div className="ch-av wanjie">{c.name.charAt(0)}</div>
+                  <div className="ch-id">
+                    <div className="ch-name">{c.name}</div>
+                    {c.archetype && <span className="pill">{c.archetype}</span>}
+                  </div>
+                </div>
+                <div className="ch-desc muted">{c.bio || '（暂无档案）'}</div>
+                <div className="ch-meta">
+                  {c._count?.instances ?? 0} 次参演 · {c._count?.trails ?? 0} 条轨迹
+                </div>
+                <div className="ch-acts">
                   <button className="link" onClick={() => openEditW(c)}>
                     {t('actions.edit')}
                   </button>
                   <button className="link danger" onClick={() => onDeleteW(c)}>
                     {t('actions.delete')}
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* 本作原生 */}
-      <div className="page-head sub">
-        <div>
-          <h2>
-            <span className="badge badge-native">{t('terms.nativeCharacter')}</span> {t('characters.nativeTitle')}
-          </h2>
-          <p className="muted">{t('characters.nativeDesc')}</p>
-        </div>
-        <button className="primary" onClick={openCreateI}>
-          ＋ {t('characters.newNative')}
-        </button>
-      </div>
-
-      <div className="dtable-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>{t('characters.name')}</th>
-              <th>{t('characters.book')}</th>
-              <th>{t('characters.role')}</th>
-              <th>{t('characters.source')}</th>
-              <th className="col-actions">{t('actions.edit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {l2 && (
-              <tr>
-                <td colSpan={5} className="empty">
-                  …
-                </td>
-              </tr>
-            )}
-            {e2 && (
-              <tr>
-                <td colSpan={5} className="empty err">
-                  {t('common.error')}
-                </td>
-              </tr>
-            )}
-            {instances?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="empty">
-                  {t('characters.emptyNative')}
-                </td>
-              </tr>
-            )}
+      {tab === 'native' && (
+        <>
+          {l2 && <div className="dtable-empty">…</div>}
+          {e2 && <div className="dtable-empty err">{t('common.error')}</div>}
+          {!l2 && !e2 && instances?.length === 0 && (
+            <div className="dtable-empty">{t('characters.emptyNative')}</div>
+          )}
+          <div className="ch-grid">
             {instances?.map((i) => (
-              <tr key={i.id}>
-                <td>{i.name}</td>
-                <td className="muted">{bookName(i.bookId)}</td>
-                <td className="muted">{i.role || '—'}</td>
-                <td className="muted">{i.character?.name ?? '—'}</td>
-                <td className="col-actions">
+              <div key={i.id} className="ch-card">
+                <div className="ch-top">
+                  <div className="ch-av native">{i.name.charAt(0)}</div>
+                  <div className="ch-id">
+                    <div className="ch-name">{i.name}</div>
+                    {i.role && <span className="pill">{i.role}</span>}
+                  </div>
+                </div>
+                <div className="ch-meta">
+                  《{bookName(i.bookId)}》 {i.character?.name ? `· 源自「${i.character.name}」` : '· 原创'}
+                </div>
+                <div className="ch-desc muted">{i.bio || '（暂无档案）'}</div>
+                <div className="ch-acts">
                   <button className="link" onClick={() => openEditI(i)}>
                     {t('actions.edit')}
                   </button>
                   <button className="link danger" onClick={() => onDeleteI(i)}>
                     {t('actions.delete')}
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* 万界角色弹窗 */}
       {openW && (

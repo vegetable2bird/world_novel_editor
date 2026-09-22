@@ -61,60 +61,48 @@ export function Worlds() {
         </button>
       </div>
 
-      <div className="dtable-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>{t('wanjie.name')}</th>
-              <th className="col-hide-narrow">{t('wanjie.description')}</th>
-              <th className="col-hide-narrow">{t('books.chapters')}</th>
-              <th className="col-hide-narrow">{t('characters.name')}</th>
-              <th className="col-actions">{t('actions.edit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={5} className="empty">
-                  …
-                </td>
-              </tr>
-            )}
-            {isError && (
-              <tr>
-                <td colSpan={5} className="empty err">
-                  {t('common.error')}
-                </td>
-              </tr>
-            )}
-            {worlds?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="empty">
-                  {t('wanjie.empty')}
-                </td>
-              </tr>
-            )}
-            {worlds?.map((w) => (
-              <tr key={w.id}>
-                <td>
-                  <span className="dot" style={{ background: w.coverColor || 'var(--accent)' }} />
-                  {w.name}
-                </td>
-                <td className="muted col-hide-narrow">{w.description || '—'}</td>
-                <td className="col-hide-narrow">{w._count?.books ?? 0}</td>
-                <td className="col-hide-narrow">{w._count?.characters ?? 0}</td>
-                <td className="col-actions">
-                  <button className="link" onClick={() => openEdit(w)}>
-                    {t('actions.edit')}
-                  </button>
-                  <button className="link danger" onClick={() => onDelete(w)}>
-                    {t('actions.delete')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 世界封面卡 */}
+      {isLoading && <div className="dtable-empty">…</div>}
+      {isError && <div className="dtable-empty err">{t('common.error')}</div>}
+      {worlds && worlds.length === 0 && (
+        <button className="wv-card wv-add" onClick={openCreate}>
+          <span className="wv-plus">＋</span>
+          <span>{t('wanjie.empty')}</span>
+        </button>
+      )}
+      <div className="wv-grid">
+        {worlds?.map((w) => (
+          <div key={w.id} className="wv-card" onClick={() => nav('/wanjie/' + w.id)}>
+            <div
+              className="wv-cover"
+              style={{ background: w.coverColor || 'linear-gradient(135deg, #8a7bd8, #6d4fd0)' }}
+            >
+              {w.name.charAt(0)}
+            </div>
+            <div className="wv-body">
+              <div className="wv-name">{w.name}</div>
+              <div className="wv-desc">{w.description || '（暂无简介）'}</div>
+              <div className="wv-meta">
+                <span>{w._count?.books ?? 0} 书籍</span>
+                <span>·</span>
+                <span>{w._count?.characters ?? 0} 角色</span>
+              </div>
+            </div>
+            <div
+              className="wv-acts"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <button className="link" onClick={() => openEdit(w)}>
+                {t('actions.edit')}
+              </button>
+              <button className="link danger" onClick={() => onDelete(w)}>
+                {t('actions.delete')}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 新建入口：选择空白 / 从模板新建 */}

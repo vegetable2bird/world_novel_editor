@@ -75,62 +75,41 @@ export function Books() {
         </select>
       </div>
 
-      <div className="dtable-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>{t('books.name')}</th>
-              <th>{t('books.description')}</th>
-              <th>{t('books.world')}</th>
-              <th>{t('books.chapters')}</th>
-              <th>{t('books.instances')}</th>
-              <th className="col-actions">{t('actions.edit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={6} className="empty">
-                  …
-                </td>
-              </tr>
-            )}
-            {isError && (
-              <tr>
-                <td colSpan={6} className="empty err">
-                  {t('common.error')}
-                </td>
-              </tr>
-            )}
-            {books?.length === 0 && (
-              <tr>
-                <td colSpan={6} className="empty">
-                  {t('books.empty')}
-                </td>
-              </tr>
-            )}
-            {books?.map((b) => (
-              <tr key={b.id}>
-                <td>{b.name}</td>
-                <td className="muted">{b.description || '—'}</td>
-                <td>{worldName(b.worldId)}</td>
-                <td>{b._count?.chapters ?? 0}</td>
-                <td>{b._count?.instances ?? 0}</td>
-                <td className="col-actions">
-                  <button className="link" onClick={() => nav(`/editor?book=${b.id}`)}>
-                    ✍ 写作
-                  </button>
-                  <button className="link" onClick={() => openEdit(b)}>
-                    {t('actions.edit')}
-                  </button>
-                  <button className="link danger" onClick={() => onDelete(b)}>
-                    {t('actions.delete')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 书架：一行为一部作品 */}
+      {isLoading && <div className="dtable-empty">…</div>}
+      {isError && <div className="dtable-empty err">{t('common.error')}</div>}
+      {books && books.length === 0 && <div className="dtable-empty">{t('books.empty')}</div>}
+      <div className="bk-list">
+        {books?.map((b) => (
+          <div key={b.id} className="bk-row">
+            <div
+              className="bk-cover"
+              style={{ background: 'linear-gradient(160deg, color-mix(in srgb, var(--accent) 62%, #fff), var(--accent))' }}
+            >
+              {b.name.charAt(0)}
+            </div>
+            <div className="bk-main">
+              <div className="bk-name">《{b.name}》</div>
+              <div className="bk-desc muted">{b.description || '（暂无简介）'}</div>
+              <div className="bk-meta">
+                <span className="pill">{worldName(b.worldId)}</span>
+                <span className="pill">{b._count?.chapters ?? 0} 章节</span>
+                <span className="pill">{b._count?.instances ?? 0} 角色</span>
+              </div>
+            </div>
+            <div className="bk-acts">
+              <button className="mini-btn bk-write" onClick={() => nav(`/editor?book=${b.id}`)}>
+                ✍ 写作
+              </button>
+              <button className="mini-btn" onClick={() => openEdit(b)}>
+                {t('actions.edit')}
+              </button>
+              <button className="mini-btn danger" onClick={() => onDelete(b)}>
+                {t('actions.delete')}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {open && (
