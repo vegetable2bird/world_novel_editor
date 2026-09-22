@@ -2750,3 +2750,176 @@ select:focus {
     justify-content: flex-end;
   }
 }
+
+
+/* ===== v8 壳层：去后台化 — 顶栏移除，侧栏变目录（2026-09-22） ===== */
+
+/* 侧栏即目录：上品牌 / 中目录 / 下工具 */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 34px 22px 22px;
+}
+.sidebar .brand-seal {
+  padding: 0 4px 22px;
+}
+.sidebar .brand-seal .brand {
+  font-size: 21px;
+  letter-spacing: 0.34em;
+}
+.sidebar .seal {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  border-radius: 10px;
+}
+/* 目录：垂直居中、宋体、宽字距、无光标即安静 */
+.sidebar .side-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 0;
+}
+.sidebar .side-link {
+  position: relative;
+  padding: 10px 14px 10px 26px;
+  border-radius: 10px;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 15.5px;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--ink) 52%, transparent);
+  background: transparent;
+  transition: color 0.2s ease;
+}
+.sidebar .side-link:hover {
+  background: transparent;
+  color: var(--ink);
+}
+/* 当前页：一枚安静的主题色圆点 */
+.sidebar .side-link::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+.sidebar .side-link.active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-weight: 400;
+}
+.sidebar .side-link.active::before {
+  transform: translateY(-50%) scale(1);
+}
+.sidebar .nav-group {
+  display: none;
+}
+
+/* 底部工具行 */
+.side-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 4px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.side-foot .theme-ic,
+.side-foot .avatar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.side-foot .lang-select {
+  margin-left: auto;
+  padding: 5px 9px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+/* 弹层锚定侧栏底部 */
+.sidebar .theme-pop {
+  top: auto;
+  bottom: 56px;
+  left: 0;
+  right: auto;
+  width: 284px;
+}
+.sidebar .user-pop {
+  top: auto;
+  bottom: 48px;
+  left: auto;
+  right: 0;
+  width: 216px;
+}
+
+/* 内容区：没有顶栏了，自己呼吸 */
+.main-col {
+  padding-top: 8px;
+}
+.content {
+  padding-top: 40px;
+}
+
+/* 移动端：浮动玻璃目录钮 */
+.nav-fab {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 85;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 8px 26px rgba(88, 66, 150, 0.16);
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+  place-items: center;
+  transition: transform 0.18s ease;
+}
+.nav-fab:hover {
+  transform: scale(1.06);
+}
+@media (max-width: 760px) {
+  .nav-fab {
+    display: grid;
+  }
+  .content {
+    padding-top: 70px;
+  }
+  /* 抽屉里的目录回到顶部排布 */
+  .sidebar {
+    padding: 22px 18px 18px;
+  }
+  .sidebar .side-nav {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+  .sidebar .side-link {
+    font-size: 15px;
+  }
+}
+
+
+/* ===== v8.1 修复：移动端侧栏被 v5 的 position:relative 挤出 fixed（2026-09-22） ===== */
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: fixed;
+  }
+}
