@@ -78,9 +78,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
           <div className="brand-seal">
-            <img className="brand-mark" src="/logo.svg" alt="" width="34" height="34" />
             <span className="brand">万象</span>
             <span className="brand-en">WANXIANG&nbsp;ATELIER</span>
+            <img className="brand-mark" src="/logo.svg" alt="" width="34" height="34" />
             <button className="side-close" onClick={() => setNavOpen(false)} title="关闭">
               ✕
             </button>
