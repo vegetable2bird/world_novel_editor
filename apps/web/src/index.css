@@ -3584,3 +3584,33 @@ select option {
   background: #fff;
   font-size: 13px;
 }
+
+
+/* ===== v15 三层琉璃翼徽记落位（2026-09-22） ===== */
+.brand-mark {
+  display: block;
+}
+@media (min-width: 761px) {
+  .sidebar .side-top .brand-seal {
+    align-items: flex-start;
+  }
+  .sidebar .side-top .brand-mark {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .sidebar .side-top .brand-mark {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+  }
+}
+
+/* 登录页徽记 */
+.login-logo {
+  display: block;
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 10px 24px rgba(109, 79, 208, 0.28));
+}

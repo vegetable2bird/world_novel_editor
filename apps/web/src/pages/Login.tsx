@@ -225,6 +225,7 @@ export function Login() {
   const heroAndCard = (
     <div className={'login-inner' + (flying ? ' flying' : '')}>
       <div className="login-hero">
+        <img className="login-logo" src="/logo.svg" alt="万象" width="76" height="76" />
         <div className="login-eyebrow">WORLD NOVEL EDITOR</div>
         <h1 className="login-brand">万象</h1>
         <div className="login-divider" />
