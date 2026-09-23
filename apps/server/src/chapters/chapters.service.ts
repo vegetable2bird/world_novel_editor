@@ -17,6 +17,13 @@ export class ChaptersService {
     return book;
   }
 
+  /** 分卷必须属于同一部书，避免跨书串卷 */
+  private async assertVolume(userId: string, bookId: string, volumeId: string) {
+    const vol = await this.prisma.volume.findFirst({ where: { id: volumeId, userId, bookId } });
+    if (!vol) throw new NotFoundException('volume not found');
+    return vol;
+  }
+
   async list(userId: string, bookId: string) {
     await this.assertBook(userId, bookId);
     const chapters = await this.prisma.chapter.findMany({
@@ -30,6 +37,7 @@ export class ChaptersService {
       return {
         id: c.id,
         bookId: c.bookId,
+        volumeId: c.volumeId,
         title: c.title,
         order: c.order,
         createdAt: c.createdAt,
@@ -52,6 +60,7 @@ export class ChaptersService {
 
   async create(userId: string, bookId: string, dto: CreateChapterDto) {
     await this.assertBook(userId, bookId);
+    if (dto.volumeId) await this.assertVolume(userId, bookId, dto.volumeId);
     const last = await this.prisma.chapter.findFirst({
       where: { bookId },
       orderBy: { order: 'desc' },
@@ -61,6 +70,7 @@ export class ChaptersService {
       data: {
         userId,
         bookId,
+        volumeId: dto.volumeId ?? null,
         title: dto.title,
         order: (last?.order ?? -1) + 1,
         versions: { create: { version: 1, content: dto.content ?? '' } },
@@ -72,8 +82,14 @@ export class ChaptersService {
   async update(userId: string, id: string, dto: UpdateChapterDto) {
     const ch = await this.prisma.chapter.findFirst({ where: { id, userId } });
     if (!ch) throw new NotFoundException('chapter not found');
-    if (dto.title !== undefined) {
-      await this.prisma.chapter.update({ where: { id }, data: { title: dto.title } });
+    const data: { title?: string; volumeId?: string | null } = {};
+    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.volumeId !== undefined) {
+      if (dto.volumeId) await this.assertVolume(userId, ch.bookId, dto.volumeId);
+      data.volumeId = dto.volumeId || null;
+    }
+    if (Object.keys(data).length) {
+      await this.prisma.chapter.update({ where: { id }, data });
     }
     if (dto.content !== undefined) {
       const v1 = await this.prisma.chapterVersion.findFirst({

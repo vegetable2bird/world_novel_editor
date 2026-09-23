@@ -4203,3 +4203,208 @@ select option {
   margin-bottom: 18px;
   word-break: break-word;
 }
+
+
+/* ===== v21 书脊头版式（对齐用户版式稿）+ 写作台分卷目录（2026-09-23） ===== */
+
+/* —— 侧栏顶部：圆徽置顶 → 竖排「万象」与竖排刊号并置 → 纹章收底 —— */
+@media (min-width: 761px) {
+  .sidebar .side-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 26px;
+  }
+  .sidebar .side-top .avatar-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+    color: var(--ink);
+    font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+    font-weight: 400;
+  }
+  .sidebar .side-top .avatar-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .sidebar .brand-seal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .sidebar .brand-row .brand {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 0.42em;
+    color: var(--ink);
+    margin: 0;
+  }
+  .sidebar .brand-row .brand-en {
+    display: block;
+    writing-mode: vertical-rl;
+    font-size: 9.5px;
+    letter-spacing: 0.42em;
+    color: var(--faint);
+    margin: 5px 0 0;
+  }
+  .sidebar .side-top .brand-mark {
+    width: 40px;
+    height: 40px;
+    margin: 0 0 0 3px;
+    filter: drop-shadow(0 8px 16px rgba(109, 79, 208, 0.2));
+  }
+  .sidebar .side-nav {
+    margin-top: 54px;
+  }
+}
+
+/* 品牌行：「万象」与刊号并排（竖排时自然成左右两列） */
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* 写作台抽屉：收起时移出可视区并退出 tab 序列（仅 transform 会让按钮仍可聚焦） */
+.wr-drawer {
+  visibility: hidden;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 0.8, 0.3, 1),
+    visibility 0s linear 0.34s;
+}
+.wr-drawer.open {
+  visibility: visible;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 0.8, 0.3, 1),
+    visibility 0s;
+}
+
+/* —— 抽屉顶部两个新建入口 —— */
+.wr-add-row {
+  display: flex;
+  gap: 8px;
+}
+.wr-add-row .btn-add {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* —— 卷目录 —— */
+.wr-vol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wr-vol + .wr-vol {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.wr-vol-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px 6px;
+}
+.wr-vol-t {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.wr-vol-n {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+/* 卷操作：平时安静，悬停/键盘聚焦时才现身（:focus-within 保证键盘可见） */
+.wr-vol-acts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.wr-vol:hover .wr-vol-acts,
+.wr-vol:focus-within .wr-vol-acts {
+  opacity: 1;
+}
+.wr-vol-btn {
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+.wr-vol-btn:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.7);
+}
+.wr-vol-btn.danger:hover {
+  color: #c0455a;
+}
+.wr-vol-empty {
+  font-size: 11.5px;
+  color: var(--faint);
+  padding: 2px 2px 8px 12px;
+}
+
+/* 章节行：整行是一个可聚焦按钮（不再用 div+onClick），删除钮独立在外 */
+.wr-chap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wr-chap-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.wr-chap-t {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--ink);
+}
+.wr-chap-m {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.wr-chap:focus-within .wr-chap-del {
+  opacity: 1;
+}

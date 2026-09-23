@@ -7,4 +7,8 @@ export class CreateChapterDto {
   @IsOptional()
   @IsString()
   content?: string; // 初始正文（缺省为空串）
+
+  @IsOptional()
+  @IsString()
+  volumeId?: string; // 归属分卷（不传 = 未分卷，直接挂在书上）
 }

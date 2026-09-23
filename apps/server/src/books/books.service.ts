@@ -11,7 +11,7 @@ export class BooksService {
     return this.prisma.book.findMany({
       where: worldId ? { userId, worldId } : { userId },
       orderBy: [{ order: 'asc' }, { updatedAt: 'desc' }],
-      include: { _count: { select: { chapters: true, instances: true } } },
+      include: { _count: { select: { chapters: true, instances: true, volumes: true } } },
     });
   }
 

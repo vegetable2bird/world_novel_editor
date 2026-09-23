@@ -24,6 +24,7 @@ export function useCreateChapter(bookId?: string) {
     mutationFn: (body: CreateChapterInput) => api.post<Chapter>(`/books/${bookId}/chapters`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['chapters', bookId ?? 'none'] });
+      qc.invalidateQueries({ queryKey: ['volumes', bookId ?? 'none'] });
       qc.invalidateQueries({ queryKey: ['books'] });
     },
   });
@@ -37,6 +38,7 @@ export function useUpdateChapter() {
     onSuccess: (ch) => {
       qc.invalidateQueries({ queryKey: ['chapter', ch.id] });
       qc.invalidateQueries({ queryKey: ['chapters'] });
+      qc.invalidateQueries({ queryKey: ['volumes'] });
     },
   });
 }
@@ -47,6 +49,7 @@ export function useDeleteChapter(bookId?: string) {
     mutationFn: (id: string) => api.del<void>(`/chapters/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['chapters', bookId ?? 'none'] });
+      qc.invalidateQueries({ queryKey: ['volumes', bookId ?? 'none'] });
       qc.invalidateQueries({ queryKey: ['books'] });
     },
   });

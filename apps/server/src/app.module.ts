@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { WorldsModule } from './worlds/worlds.module';
 import { BooksModule } from './books/books.module';
 import { ChaptersModule } from './chapters/chapters.module';
+import { VolumesModule } from './volumes/volumes.module';
 import { CharactersModule } from './characters/characters.module';
 import { EntitiesModule } from './entities/entities.module';
 import { RelationsModule } from './relations/relations.module';
@@ -23,6 +24,7 @@ import { AiModule } from './ai/ai.module';
     WorldsModule,
     BooksModule,
     ChaptersModule,
+    VolumesModule,
     CharactersModule,
     EntitiesModule,
     RelationsModule,

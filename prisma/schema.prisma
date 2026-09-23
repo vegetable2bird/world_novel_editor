@@ -23,6 +23,7 @@ model User {
 
   worlds          World[]
   books           Book[]
+  volumes         Volume[]
   chapters        Chapter[]
   entities        WorldEntity[]
   relations       EntityRelation[]
@@ -73,6 +74,7 @@ model Book {
 
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   world      World        @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  volumes    Volume[]
   chapters   Chapter[]
   instances  CharacterInstance[]
   trails     ActivityTrail[]
@@ -81,7 +83,9 @@ model Book {
   @@index([worldId])
 }
 
-model Chapter {
+// 分卷：作品之下的层级（书 → 卷 → 章）。
+// 归属可空（未分卷的章节直接挂在书上）；删除卷时把卷内章节的 volumeId 置空，不级联删章节。
+model Volume {
   id        String   @id @default(cuid())
   userId    String
   bookId    String
@@ -90,12 +94,32 @@ model Chapter {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+
+  @@index([userId])
+  @@index([bookId])
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  volumeId  String?
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   book     Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  volume   Volume?        @relation(fields: [volumeId], references: [id], onDelete: SetNull)
   versions ChapterVersion[]
 
   @@index([userId])
   @@index([bookId])
+  @@index([volumeId])
 }
 
 model ChapterVersion {

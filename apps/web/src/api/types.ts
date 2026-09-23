@@ -20,13 +20,36 @@ export interface Book {
   runtimeJson?: string | null;
   createdAt: string;
   updatedAt: string;
-  _count?: { chapters: number; instances: number };
+  _count?: { chapters: number; instances: number; volumes: number };
+}
+
+/** 分卷：作品之下的层级（书 → 卷 → 章） */
+export interface Volume {
+  id: string;
+  userId?: string;
+  bookId: string;
+  title: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { chapters: number };
+}
+
+export interface CreateVolumeInput {
+  title: string;
+  order?: number;
+}
+
+export interface UpdateVolumeInput {
+  title?: string;
+  order?: number;
 }
 
 /** 章节列表项（含 v1 正文字数与片段预览） */
 export interface ChapterListItem {
   id: string;
   bookId: string;
+  volumeId?: string | null;
   title: string;
   order: number;
   createdAt: string;
@@ -44,11 +67,14 @@ export interface Chapter extends Omit<ChapterListItem, 'charCount' | 'snippet'> 
 export interface CreateChapterInput {
   title: string;
   content?: string;
+  volumeId?: string;
 }
 
 export interface UpdateChapterInput {
   title?: string;
   content?: string;
+  /** 显式传 null 表示移出分卷 */
+  volumeId?: string | null;
 }
 
 export interface Character {
