@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as echarts from 'echarts/core';
+import { ScatterChart } from 'echarts/charts';
 import { GeoComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEntities, useCreateEntity, useUpdateEntity, useDeleteEntity } from '../hooks/useEntities';
 import type { WorldEntity } from '../api/types';
 import { generate, defaultRegionNames, normalizeParams, type GenParams } from '../lib/worldgen';
 
-echarts.use([GeoComponent, TooltipComponent, CanvasRenderer]);
+echarts.use([ScatterChart, GeoComponent, TooltipComponent, CanvasRenderer]);
 
 interface MapV2 {
   v: 2;
@@ -100,6 +101,73 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
     return names.map((x, i) => x || defaultRegionNames(n)[i]);
   }, [gen, draft.regionNames]);
 
+  /* ---------- 势力落点 ---------- */
+  const [pinning, setPinning] = useState<string | null>(null);
+  const facFields = useMemo(() => {
+    const m = new Map<string, { mapId?: string; regionIdx?: number; color?: string }>();
+    for (const f of factions) {
+      try {
+        m.set(f.id, JSON.parse(f.fields || '{}'));
+      } catch {
+        m.set(f.id, {});
+      }
+    }
+    return m;
+  }, [factions]);
+
+  const pins = useMemo(() => {
+    if (!current) return [] as { id: string; name: string; color?: string; coord: [number, number]; regionIdx: number }[];
+    return factions
+      .map((f) => {
+        const ff = facFields.get(f.id) ?? {};
+        if (ff.mapId !== current.entity.id) return null;
+        const idx = ff.regionIdx;
+        if (idx === undefined || idx < 0 || idx >= gen.regions.length) return null;
+        return { id: f.id, name: f.name, color: ff.color, coord: gen.regions[idx].centroid, regionIdx: idx };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+  }, [factions, facFields, current, gen]);
+
+  const placePin = async (facId: string, regionIdx: number) => {
+    const f = factions.find((x) => x.id === facId);
+    if (!f) return;
+    const merged = { ...(facFields.get(facId) ?? {}), mapId: current?.entity.id, regionIdx };
+    await updateEntity.mutateAsync({ id: facId, fields: JSON.stringify(merged) });
+    setPinning(null);
+  };
+
+  const clearPin = async (facId: string) => {
+    const f = factions.find((x) => x.id === facId);
+    if (!f) return;
+    const merged = { ...(facFields.get(facId) ?? {}) };
+    delete merged.mapId;
+    delete merged.regionIdx;
+    await updateEntity.mutateAsync({ id: facId, fields: JSON.stringify(merged) });
+  };
+
+  // 图表点击：图钉 → 打开势力；编辑落点中 → 放置到区域
+  type ClickEvt = { componentType?: string; seriesType?: string; name?: string; data?: { facId?: string } };
+  const clickRef = useRef<(p: ClickEvt) => void>(() => {});
+  useEffect(() => {
+    const c = chart.current;
+    if (!c) return;
+    const handler = (p: unknown) => clickRef.current(p as ClickEvt);
+    c.on('click', handler);
+    return () => {
+      c.off('click', handler);
+    };
+  }, []);
+  clickRef.current = (p) => {
+    if (p.componentType === 'series' && p.seriesType === 'scatter' && p.data?.facId) {
+      onOpenFac?.(p.data.facId);
+      return;
+    }
+    if (mode === 'edit' && pinning && p.componentType === 'geo' && p.name) {
+      const idx = Number(p.name.slice(1));
+      if (Number.isFinite(idx)) void placePin(pinning, idx);
+    }
+  };
+
   useEffect(() => {
     const c = chart.current;
     if (!c) return;
@@ -145,11 +213,42 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
           },
           silent: false,
         },
-        series: [],
+        series: [
+          {
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            symbol: 'pin',
+            symbolSize: 30,
+            itemStyle: {
+              color: '#6d4fd0',
+              borderColor: '#fff',
+              borderWidth: 1.5,
+              shadowBlur: 8,
+              shadowColor: 'rgba(70,55,130,0.3)',
+            },
+            label: {
+              show: true,
+              position: 'bottom',
+              distance: 4,
+              formatter: (p: { data: { name?: string } }) => p.data.name ?? '',
+              fontSize: 11,
+              color: '#3a3157',
+              letterSpacing: 1,
+            },
+            emphasis: { scale: 1.15 },
+            data: pins.map((pn) => ({
+              name: pn.name,
+              facId: pn.id,
+              value: pn.coord,
+              itemStyle: pn.color ? { color: pn.color } : undefined,
+            })),
+            z: 20,
+          },
+        ],
       } as never,
       true,
     );
-  }, [gen, regionNames]);
+  }, [gen, regionNames, pins]);
 
   /* ---------- 图层树 ---------- */
   const depthOf = (m: { data: MapV2 }) => {
@@ -183,13 +282,17 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
 
   const save = async () => {
     const payload = { ...draft, params: { ...draft.params, regions: gen.regions.length }, regionNames };
-    if (current) {
-      await updateEntity.mutateAsync({ id: current.entity.id, name: draft.name, fields: JSON.stringify(payload) });
-    } else {
-      const e = await createEntity.mutateAsync({ type: 'map', name: draft.name, fields: JSON.stringify(payload) });
-      setCurrentId(e.id);
+    try {
+      if (current) {
+        await updateEntity.mutateAsync({ id: current.entity.id, name: draft.name, fields: JSON.stringify(payload) });
+      } else {
+        const e = await createEntity.mutateAsync({ type: 'map', name: draft.name, fields: JSON.stringify(payload) });
+        setCurrentId(e.id);
+      }
+      setSavedTick((t) => t + 1);
+    } catch (err) {
+      window.alert('保存失败：' + (err instanceof Error ? err.message : String(err)));
     }
-    setSavedTick((t) => t + 1);
   };
 
   const newMap = (asChild: boolean) => {
@@ -260,6 +363,41 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
               <div className="ms-kids">
                 子地图：{children.map((c) => c.data.name).join('、')}
               </div>
+            )}
+          </div>
+
+          <div className="ms-sec">
+            <div className="ms-label">势力落点</div>
+            {!current && <div className="ms-kids">保存本地图后，才能把势力放到区域上。</div>}
+            {current && factions.length === 0 && <div className="ms-kids">暂无势力——先在「势力组织」里创建。</div>}
+            {current &&
+              factions.map((f) => {
+                const ff = facFields.get(f.id) ?? {};
+                const idx = ff.regionIdx;
+                const pinned = ff.mapId === current.entity.id && idx !== undefined && idx >= 0 && idx < gen.regions.length;
+                return (
+                  <div key={f.id} className="ms-slider">
+                    <i className="ms-dot" style={{ background: ff.color || 'var(--accent)' }} />
+                    <span className="ms-facnm" title={f.name}>{f.name}</span>
+                    {pinned ? (
+                      <>
+                        <span className="ms-pinat">{regionNames[idx]}</span>
+                        <button className="mini-btn" onClick={() => clearPin(f.id)}>清除</button>
+                      </>
+                    ) : (
+                      <button
+                        className={'mini-btn' + (pinning === f.id ? ' on' : '')}
+                        style={{ marginLeft: 'auto' }}
+                        onClick={() => setPinning((v) => (v === f.id ? null : f.id))}
+                      >
+                        {pinning === f.id ? '取消' : '落点'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            {pinning && current && (
+              <div className="ms-kids">点击地图上的区域，放置「{factions.find((x) => x.id === pinning)?.name}」…</div>
             )}
           </div>
 

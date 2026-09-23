@@ -34,7 +34,7 @@ export function useUpdateEntity(worldId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...body }: Partial<CreateEntityInput> & { id: string }) =>
-      api.put<WorldEntity>(`/entities/${id}`, body),
+      api.put<WorldEntity>(`/worlds/entities/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['entities', worldId] }),
   });
 }
@@ -42,7 +42,7 @@ export function useUpdateEntity(worldId: string) {
 export function useDeleteEntity(worldId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.del<void>(`/entities/${id}`),
+    mutationFn: (id: string) => api.del<void>(`/worlds/entities/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['entities', worldId] }),
   });
 }
@@ -67,7 +67,7 @@ export function useCreateRelation(worldId: string) {
 export function useDeleteRelation(worldId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.del<void>(`/relations/${id}`),
+    mutationFn: (id: string) => api.del<void>(`/worlds/relations/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['relations', worldId] }),
   });
 }
@@ -93,7 +93,7 @@ export function useUpdateTimeline(worldId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...body }: UpdateTimelineInput & { id: string }) =>
-      api.put<TimelineEvent>(`/timeline/${id}`, body),
+      api.put<TimelineEvent>(`/worlds/timeline/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['timeline', worldId] }),
   });
 }
@@ -101,7 +101,7 @@ export function useUpdateTimeline(worldId: string) {
 export function useDeleteTimeline(worldId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.del<void>(`/timeline/${id}`),
+    mutationFn: (id: string) => api.del<void>(`/worlds/timeline/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['timeline', worldId] }),
   });
 }
