@@ -4326,10 +4326,16 @@ select option {
   letter-spacing: 0.06em;
   color: var(--ink);
 }
+/* 小字号辅助文本（卷计数/章字数）：--faint 在纸面上仅 3.4:1，
+   不满足 WCAG 2.2 AA 正文 4.5:1，故这里改用 --muted（约 5:1）。 */
+.wr-vol-n,
+.wr-chap-m,
+.wr-vol-empty {
+  color: var(--muted);
+}
 .wr-vol-n {
   flex-shrink: 0;
   font-size: 11px;
-  color: var(--faint);
   font-variant-numeric: tabular-nums;
 }
 /* 卷操作：平时安静，悬停/键盘聚焦时才现身（:focus-within 保证键盘可见） */
@@ -4348,7 +4354,7 @@ select option {
 .wr-vol-btn {
   border: none;
   background: transparent;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.04em;
   padding: 3px 5px;
@@ -4367,7 +4373,6 @@ select option {
 }
 .wr-vol-empty {
   font-size: 11.5px;
-  color: var(--faint);
   padding: 2px 2px 8px 12px;
 }
 
@@ -4403,7 +4408,6 @@ select option {
 }
 .wr-chap-m {
   font-size: 11.5px;
-  color: var(--faint);
 }
 .wr-chap:focus-within .wr-chap-del {
   opacity: 1;
