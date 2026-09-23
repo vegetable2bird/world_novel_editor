@@ -12,6 +12,7 @@ import { EntitiesModule } from './entities/entities.module';
 import { RelationsModule } from './relations/relations.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { TemplatesModule } from './templates/templates.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { TemplatesModule } from './templates/templates.module';
     RelationsModule,
     TimelineModule,
     TemplatesModule,
+    AiModule,
   ],
   controllers: [HealthController],
   providers: [],

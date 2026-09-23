@@ -88,6 +88,11 @@ export interface UpdateWorldInput {
   coverColor?: string;
 }
 
+export interface ForkWorldResult {
+  worldId: string;
+  name: string;
+}
+
 export interface CreateBookInput {
   worldId: string;
   name: string;

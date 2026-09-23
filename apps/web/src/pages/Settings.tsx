@@ -97,7 +97,7 @@ export function Settings() {
                 >
                   {SUPPORTED_LOCALES.map((l) => (
                     <option key={l} value={l}>
-                      {l}
+                      {l === 'zh-CN' ? '中文' : l === 'en' ? 'English' : l}
                     </option>
                   ))}
                 </select>

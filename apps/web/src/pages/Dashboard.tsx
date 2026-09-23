@@ -75,11 +75,11 @@ export function Dashboard() {
           <div className="qd">空白起步，或套用模板</div>
         </button>
         <button className="qbtn" onClick={() => nav('/characters')}>
-          <div className="qt">🧬 万界</div>
+          <div className="qt">万界</div>
           <div className="qd">管理你的活体角色</div>
         </button>
         <button className="qbtn" onClick={() => nav('/editor')}>
-          <div className="qt">✍️ 继续写作</div>
+          <div className="qt">继续写作</div>
           <div className="qd">{firstBook ? `《${firstBook.name}》` : '进入写作台'}</div>
         </button>
         <button className="qbtn" onClick={() => nav('/settings')}>

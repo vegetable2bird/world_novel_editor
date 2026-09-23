@@ -23,8 +23,7 @@
     "console": "Console",
     "editor": "Editor",
     "settings": "Settings",
-    "dashboard": "Dashboard",
-    "templates": "Templates"
+    "dashboard": "Dashboard"
   },
   "auth": {
     "login": "Sign In",
@@ -54,7 +53,30 @@
     "name": "Name",
     "description": "Description",
     "visibility": "Visibility",
-    "coverColor": "Cover Color"
+    "coverColor": "Cover Color",
+    "blankWorld": "Blank World",
+    "blankWorldDesc": "Start from scratch — build continents, factions and skills yourself",
+    "fromWorld": "Clone from World",
+    "fromWorldDesc": "Derive an independent new world from an existing one (git-style fork)",
+    "clone": "Clone"
+  },
+  "worldDetail": {
+    "canonicalNote": "This is the canonical base world — the authoritative version of your setting.",
+    "cloneHint": "Tip: in Myriad Worlds, click New World → Clone from World to derive an independent copy from this world.",
+    "intro": "World Intro",
+    "noIntro": "(No intro yet)",
+    "editIntro": "Edit Intro",
+    "editIntroTitle": "Edit World Intro",
+    "interactiveNote": "Continents, factions and skills are interactive modules — edits save instantly to your Myriad Worlds.",
+    "tabs": {
+      "overview": "Overview",
+      "map": "Continent Map",
+      "fac": "Factions",
+      "skill": "Skills",
+      "entity": "Entities",
+      "graph": "Relationship Graph",
+      "timeline": "Timeline"
+    }
   },
   "worlds": {
     "title": "Myriad Worlds",

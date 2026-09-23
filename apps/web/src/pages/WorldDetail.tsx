@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWorlds, useUpdateWorld } from '../hooks/useWorlds';
-import { useCreateTemplate } from '../hooks/useTemplates';
 import {
   useEntities,
   useCreateEntity,
@@ -67,7 +66,6 @@ export function WorldDetail() {
   const { data: worlds, isLoading: worldsLoading } = useWorlds();
   const world = worlds?.find((w) => w.id === worldId);
   const updateWorld = useUpdateWorld();
-  const createTpl = useCreateTemplate();
 
   const { data: entities, isLoading: entLoading } = useEntities(worldId);
   const { data: relations } = useRelations(worldId);
@@ -101,14 +99,6 @@ export function WorldDetail() {
   const [relModal, setRelModal] = useState<string | null>(null);
   const [introModal, setIntroModal] = useState(false);
   const [devModal, setDevModal] = useState(false);
-  const [saveTplOpen, setSaveTplOpen] = useState(false);
-  const [tplForm, setTplForm] = useState<{ name: string; description: string; coverColor: string; category: string; visibility: string }>({
-    name: '',
-    description: '',
-    coverColor: '#d4af37',
-    category: '',
-    visibility: 'private',
-  });
 
   // 表单草稿
   const [facForm, setFacForm] = useState<{ name: string; kind: string; desc: string; color: string }>({
@@ -237,29 +227,6 @@ export function WorldDetail() {
     else await createEntity.mutateAsync({ type: 'dev', name: '__dev__', fields });
     setDevModal(false);
   }
-  function openSaveTpl() {
-    if (!world) return;
-    setTplForm({
-      name: `${world.name} 模板`,
-      description: world.description ?? '',
-      coverColor: world.coverColor || '#d4af37',
-      category: '',
-      visibility: 'private',
-    });
-    setSaveTplOpen(true);
-  }
-  async function saveTpl() {
-    if (!world || !tplForm.name.trim()) return;
-    await createTpl.mutateAsync({
-      name: tplForm.name,
-      description: tplForm.description,
-      coverColor: tplForm.coverColor,
-      category: tplForm.category,
-      visibility: tplForm.visibility,
-      worldId: world.id,
-    });
-    setSaveTplOpen(false);
-  }
 
   if (worldsLoading) return <p className="muted">…</p>;
   if (!world) return <p className="muted">世界不存在 · <button className="link" onClick={() => nav('/wanjie')}>返回万界</button></p>;
@@ -284,11 +251,8 @@ export function WorldDetail() {
         <span className="crumb-sep">/</span>
         <span className="crumb-cur">{world.name}</span>
         <span className="crumb-tools">
-          <button className="mini-btn" onClick={openSaveTpl}>
-            💾 存为模板
-          </button>
           <button className="mini-btn" onClick={() => nav('/wanjie')}>
-            🧭 跳转万界
+            {t('actions.jumpWanjie')}
           </button>
         </span>
       </div>
@@ -316,17 +280,9 @@ export function WorldDetail() {
 
       {/* Tabs */}
       <div className="tabs2">
-        {[
-          ['overview', '概览'],
-          ['map', '大陆地图'],
-          ['fac', '势力组织'],
-          ['skill', '技能发展'],
-          ['entity', '实体'],
-          ['graph', '关系图'],
-          ['timeline', '时间线'],
-        ].map(([k, label]) => (
+        {['overview', 'map', 'fac', 'skill', 'entity', 'graph', 'timeline'].map((k) => (
           <button key={k} className={tab === k ? 'active' : ''} onClick={() => setTab(k)}>
-            {label}
+            {t('worldDetail.tabs.' + k)}
           </button>
         ))}
       </div>
@@ -335,21 +291,21 @@ export function WorldDetail() {
       {tab === 'overview' && (
         <div className="panel2 active">
           <div className="redline">
-            📌 <div>当前为<b>基础世界（正典）</b>。每本书在「书籍管理 → 世界管理」中拥有自己的世界副本，副本的演化不会回写此处。</div>
+            <div>{t('worldDetail.canonicalNote')}</div>
           </div>
           <div className="footnote" style={{ marginBottom: 14 }}>
-            提示：进入任意书籍 → 管理流 → 世界管理，即可打开 / 派生本书专属的世界副本。
+            {t('worldDetail.cloneHint')}
           </div>
           <div className="card">
             <h3 className="section-h" style={{ marginTop: 0 }}>
-              世界简介
+              {t('worldDetail.intro')}
             </h3>
-            <p className="muted">{(world.description || '（暂无简介）')}</p>
+            <p className="muted">{(world.description || t('worldDetail.noIntro'))}</p>
             <button className="mini-btn" style={{ marginTop: 12 }} onClick={() => { setIntroForm(world.description ?? ''); setIntroModal(true); }}>
-              ✎ 编辑简介
+              {t('worldDetail.editIntro')}
             </button>
           </div>
-          <div className="footnote">大陆地图、势力组织、技能发展均为可交互模块，编辑即时落盘到你的万界。</div>
+          <div className="footnote">{t('worldDetail.interactiveNote')}</div>
         </div>
       )}
 
@@ -454,7 +410,7 @@ export function WorldDetail() {
                 </div>
               ))
             )}
-            <button className="mini-btn" style={{ marginTop: 10 }} onClick={openDev}>✎ 调整发展度</button>
+            <button className="mini-btn" style={{ marginTop: 10 }} onClick={openDev}>调整发展度</button>
           </div>
         </div>
       )}
@@ -650,12 +606,12 @@ export function WorldDetail() {
       )}
 
       {introModal && (
-        <Modal title="编辑世界简介" onClose={() => setIntroModal(false)}>
-          <Field label="简介">
+        <Modal title={t('worldDetail.editIntroTitle')} onClose={() => setIntroModal(false)}>
+          <Field label={t('worldDetail.intro')}>
             <textarea rows={4} value={introForm} onChange={(e) => setIntroForm(e.target.value)} />
           </Field>
           <div className="modal-actions">
-            <button className="primary" onClick={saveIntro} disabled={updateWorld.isPending}>保存</button>
+            <button className="primary" onClick={saveIntro} disabled={updateWorld.isPending}>{t('actions.save')}</button>
           </div>
         </Modal>
       )}
@@ -688,34 +644,6 @@ export function WorldDetail() {
               }}
             >
               保存
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {saveTplOpen && (
-        <Modal title="存为模板" onClose={() => setSaveTplOpen(false)}>
-          <Field label="模板名">
-            <input value={tplForm.name} onChange={(e) => setTplForm({ ...tplForm, name: e.target.value })} autoFocus />
-          </Field>
-          <Field label="简介">
-            <textarea value={tplForm.description} onChange={(e) => setTplForm({ ...tplForm, description: e.target.value })} />
-          </Field>
-          <Field label="分类">
-            <input value={tplForm.category} onChange={(e) => setTplForm({ ...tplForm, category: e.target.value })} placeholder="如：西幻 / 都市 / 废土" />
-          </Field>
-          <Field label="封面色">
-            <input value={tplForm.coverColor} onChange={(e) => setTplForm({ ...tplForm, coverColor: e.target.value })} placeholder="#d4af37" />
-          </Field>
-          <Field label="可见性">
-            <select value={tplForm.visibility} onChange={(e) => setTplForm({ ...tplForm, visibility: e.target.value })}>
-              <option value="private">private（仅自己）</option>
-              <option value="public">public（他人可套用）</option>
-            </select>
-          </Field>
-          <div className="modal-actions">
-            <button className="primary" onClick={saveTpl} disabled={createTpl.isPending}>
-              {t('actions.save')}
             </button>
           </div>
         </Modal>

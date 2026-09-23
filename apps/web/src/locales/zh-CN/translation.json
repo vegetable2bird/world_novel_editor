@@ -54,7 +54,30 @@
     "name": "名称",
     "description": "简介",
     "visibility": "可见性",
-    "coverColor": "封面色"
+    "coverColor": "封面色",
+    "blankWorld": "空白世界",
+    "blankWorldDesc": "从零开始，自己搭建大陆、势力与技能",
+    "fromWorld": "从世界克隆",
+    "fromWorldDesc": "以某个已有世界为源，派生出独立的新世界（git 式 fork）",
+    "clone": "克隆"
+  },
+  "worldDetail": {
+    "canonicalNote": "当前为「基础世界（正典）」。它是你世界观的权威版本。",
+    "cloneHint": "提示：在万界点「新建世界 → 从世界克隆」，即可基于本世界派生一个独立副本，互不干扰。",
+    "intro": "世界简介",
+    "noIntro": "（暂无简介）",
+    "editIntro": "编辑简介",
+    "editIntroTitle": "编辑世界简介",
+    "interactiveNote": "大陆地图、势力组织、技能发展均为可交互模块，编辑即时落盘到你的万界。",
+    "tabs": {
+      "overview": "概览",
+      "map": "大陆地图",
+      "fac": "势力组织",
+      "skill": "技能发展",
+      "entity": "实体",
+      "graph": "关系图",
+      "timeline": "时间线"
+    }
   },
   "books": {
     "title": "书籍",

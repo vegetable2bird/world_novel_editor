@@ -49,4 +49,13 @@ export class WorldsController {
   remove(@CurrentUser() u: { id: string }, @Param('id') id: string) {
     return this.svc.remove(u.id, id);
   }
+
+  @Post(':worldId/fork')
+  fork(
+    @CurrentUser() u: { id: string },
+    @Param('worldId') worldId: string,
+    @Body() body: { name?: string } = {},
+  ) {
+    return this.svc.forkWorld(u.id, worldId, body.name);
+  }
 }

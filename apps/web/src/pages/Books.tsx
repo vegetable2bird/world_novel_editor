@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useWorlds } from '../hooks/useWorlds';
 import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '../hooks/useBooks';
-import { Modal, Field } from '../components/Modal';
+import { Modal, Field, Confirm } from '../components/Modal';
 import type { Book, CreateBookInput } from '../api/types';
 
 export function Books() {
@@ -18,6 +18,7 @@ export function Books() {
   const [editing, setEditing] = useState<Book | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CreateBookInput>({ worldId: '', name: '' });
+  const [delTarget, setDelTarget] = useState<Book | null>(null);
 
   function worldName(id: string) {
     return worlds?.find((w) => w.id === id)?.name ?? '—';
@@ -34,7 +35,6 @@ export function Books() {
       name: b.name,
       description: b.description ?? '',
       order: b.order ?? undefined,
-      runtimeJson: b.runtimeJson ?? '',
     });
     setOpen(true);
   }
@@ -48,7 +48,11 @@ export function Books() {
     setOpen(false);
   }
   async function onDelete(b: Book) {
-    if (confirm(`${t('actions.delete')}：${b.name}？`)) await remove.mutateAsync(b.id);
+    setDelTarget(b);
+  }
+  async function doDelete() {
+    if (delTarget) await remove.mutateAsync(delTarget.id);
+    setDelTarget(null);
   }
 
   return (
@@ -99,7 +103,7 @@ export function Books() {
             </div>
             <div className="bk-acts">
               <button className="mini-btn bk-write" onClick={() => nav(`/editor?book=${b.id}`)}>
-                ✍ 写作
+                写作
               </button>
               <button className="mini-btn" onClick={() => openEdit(b)}>
                 {t('actions.edit')}
@@ -138,15 +142,23 @@ export function Books() {
               onChange={(e) => setForm({ ...form, order: e.target.value ? Number(e.target.value) : undefined })}
             />
           </Field>
-          <Field label={t('books.runtime')}>
-            <textarea value={form.runtimeJson ?? ''} placeholder='{}' onChange={(e) => setForm({ ...form, runtimeJson: e.target.value })} />
-          </Field>
           <div className="modal-actions">
             <button className="primary" onClick={submit} disabled={create.isPending || update.isPending}>
               {t('actions.save')}
             </button>
           </div>
         </Modal>
+      )}
+
+      {delTarget && (
+        <Confirm
+          title={t('actions.delete')}
+          message={`${t('actions.delete')}：《${delTarget.name}》？`}
+          danger
+          confirmText={t('actions.delete')}
+          onConfirm={doDelete}
+          onClose={() => setDelTarget(null)}
+        />
       )}
     </section>
   );

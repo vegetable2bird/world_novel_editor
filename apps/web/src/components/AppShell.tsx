@@ -10,7 +10,6 @@ const NAV: { to: string; key: string }[] = [
   { to: '/wanjie', key: 'wanjie' },
   { to: '/books', key: 'books' },
   { to: '/characters', key: 'characters' },
-  { to: '/templates', key: 'templates' },
   { to: '/editor', key: 'editor' },
   { to: '/console', key: 'console' },
   { to: '/settings', key: 'settings' },

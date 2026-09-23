@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWorlds, useCreateWorld, useUpdateWorld, useDeleteWorld } from '../hooks/useWorlds';
-import { useTemplates, useForkTemplate } from '../hooks/useTemplates';
+import { useWorlds, useCreateWorld, useUpdateWorld, useDeleteWorld, useForkWorld } from '../hooks/useWorlds';
 import { Modal, Field } from '../components/Modal';
+import { Confirm } from '../components/Modal';
 import type { World, CreateWorldInput } from '../api/types';
 
 export function Worlds() {
@@ -13,13 +13,13 @@ export function Worlds() {
   const create = useCreateWorld();
   const update = useUpdateWorld();
   const remove = useDeleteWorld();
-  const fork = useForkTemplate();
-  const { data: tpls } = useTemplates('all');
+  const fork = useForkWorld();
 
   const [editing, setEditing] = useState<World | null>(null);
   const [open, setOpen] = useState(false); // 空白世界表单
   const [mode, setMode] = useState<'choice' | 'pick' | null>(null); // 新建入口选择
   const [form, setForm] = useState<CreateWorldInput>({ name: '' });
+  const [delTarget, setDelTarget] = useState<World | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -41,7 +41,11 @@ export function Worlds() {
     setOpen(false);
   }
   async function onDelete(w: World) {
-    if (confirm(`${t('actions.delete')}：${w.name}？`)) await remove.mutateAsync(w.id);
+    setDelTarget(w);
+  }
+  async function doDelete() {
+    if (delTarget) await remove.mutateAsync(delTarget.id);
+    setDelTarget(null);
   }
   async function onFork(id: string) {
     const res = await fork.mutateAsync({ id });
@@ -105,44 +109,42 @@ export function Worlds() {
         ))}
       </div>
 
-      {/* 新建入口：选择空白 / 从模板新建 */}
+      {/* 新建入口：选择空白 / 从世界克隆 */}
       {mode === 'choice' && (
         <Modal title={t('wanjie.newWorld')} onClose={() => setMode(null)}>
           <div className="nw-opt">
             <div className="nw-card" onClick={() => { setMode(null); setOpen(true); }}>
-              <div className="nt">{t('templates.blankWorld')}</div>
-              <div className="nd">{t('templates.blankWorldDesc')}</div>
+              <div className="nt">{t('wanjie.blankWorld')}</div>
+              <div className="nd">{t('wanjie.blankWorldDesc')}</div>
             </div>
             <div className="nw-card" onClick={() => setMode('pick')}>
-              <div className="nt">{t('templates.fromTemplate')}</div>
-              <div className="nd">{t('templates.fromTemplateDesc')}</div>
+              <div className="nt">{t('wanjie.fromWorld')}</div>
+              <div className="nd">{t('wanjie.fromWorldDesc')}</div>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* 从模板新建：挑选模板 */}
+      {/* 从世界克隆：挑选源世界（git 式 fork） */}
       {mode === 'pick' && (
-        <Modal title={t('templates.fromTemplate')} onClose={() => setMode(null)} wide>
-          {!tpls || tpls.length === 0 ? (
-            <div className="dtable-empty">{t('templates.emptyPublic')}</div>
+        <Modal title={t('wanjie.fromWorld')} onClose={() => setMode(null)} wide>
+          {!worlds || worlds.length === 0 ? (
+            <div className="dtable-empty">{t('wanjie.empty')}</div>
           ) : (
             <div className="tpl-grid">
-              {tpls.map((tpl) => (
-                <div className="tpl-card" key={tpl.id}>
-                  <div className="tpl-cover" style={{ background: tpl.coverColor || 'linear-gradient(135deg,#c8453a,#8a2f6b)' }} />
+              {worlds.map((w) => (
+                <div className="tpl-card" key={w.id}>
+                  <div className="tpl-cover" style={{ background: w.coverColor || 'linear-gradient(135deg,#8a7bd8,#6d4fd0)' }} />
                   <div className="tpl-body">
-                    <div className="tpl-name">{tpl.name}</div>
-                    {tpl.description && <div className="muted tpl-desc">{tpl.description}</div>}
+                    <div className="tpl-name">{w.name}</div>
+                    {w.description && <div className="muted tpl-desc">{w.description}</div>}
                     <div className="tagrow">
-                      {tpl.category && <span className="tag">{tpl.category}</span>}
-                      <span className={'tag ' + (tpl.visibility === 'public' ? 'tag-pub' : 'tag-priv')}>
-                        {tpl.visibility === 'public' ? t('templates.public') : t('templates.private')}
-                      </span>
+                      <span className="tag">{w._count?.books ?? 0} 书籍</span>
+                      <span className="tag">{w._count?.characters ?? 0} 角色</span>
                     </div>
                     <div className="tpl-actions">
-                      <button className="mini-btn" disabled={fork.isPending} onClick={() => onFork(tpl.id)}>
-                        {t('templates.fork')}
+                      <button className="mini-btn" disabled={fork.isPending} onClick={() => onFork(w.id)}>
+                        {t('wanjie.clone')}
                       </button>
                     </div>
                   </div>
@@ -151,6 +153,17 @@ export function Worlds() {
             </div>
           )}
         </Modal>
+      )}
+
+      {delTarget && (
+        <Confirm
+          title={t('actions.delete')}
+          message={`${t('actions.delete')}：${delTarget.name}？`}
+          danger
+          confirmText={t('actions.delete')}
+          onConfirm={doDelete}
+          onClose={() => setDelTarget(null)}
+        />
       )}
 
       {/* 空白世界表单 */}
