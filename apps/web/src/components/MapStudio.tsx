@@ -255,6 +255,15 @@ function MapEditorModal({
     };
   }, []);
 
+  // 三列布局（左设置 / 中地图 / 右区域详情）切换时容器宽度会变，让 echarts 跟着重排
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => chart.current?.resize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // 预览渲染（含点选区域高亮）
   useEffect(() => {
     const c = chart.current;
@@ -271,6 +280,9 @@ function MapEditorModal({
   useEffect(() => {
     setSelRegion((v) => (v !== null && v >= previewGen.regions.length ? null : v));
   }, [previewGen]);
+
+  /** 是否展开右侧「区域详情」列（未点选 / 越界时不渲染） */
+  const showRegion = selRegion !== null && selRegion < previewGen.regions.length;
 
   const patchParams = (k: keyof GenParams, v: number) =>
     setDraft((d) => ({ ...d, params: { ...d.params, [k]: v } }));
@@ -380,8 +392,8 @@ function MapEditorModal({
           <button className="ms-layers-x" onClick={() => onClose()}>✕</button>
         </div>
 
-        <div className="ms-modal-body">
-          {/* 左：控制台 */}
+        <div className={'ms-modal-body' + (showRegion ? ' has-region' : '')}>
+          {/* 左：全局设置（区域相关全部让位给右侧） */}
           <div className="ms-panel">
             <div className="ms-sec">
               <div className="ms-label">地图</div>
@@ -421,8 +433,8 @@ function MapEditorModal({
             </div>
 
             <div className="ms-hint">
-              点击右侧地图上的任一区域，详情会在右侧浮出 —— 在那里编辑该区
-              <b>名称</b>、<b>地势</b>与<b>势力落点</b>；未点选时不占地方。
+              点击地图上的任一区域，右侧会展开该区详情 —— 在那里编辑本区
+              <b>名称</b>、<b>地势</b>与<b>势力落点</b>；未点选时右侧不占地方。
             </div>
 
             {parentMap && (
@@ -444,12 +456,14 @@ function MapEditorModal({
             )}
           </div>
 
-          {/* 右：实时预览 + 按需浮出的区域详情 */}
+          {/* 中：实时预览 */}
           <div className="ms-stage">
             <div ref={chartRef} className="ms-chart ms-preview" />
+          </div>
 
-            {selRegion !== null && (
-              <section className="ms-rdetail" aria-label={`第 ${selRegion + 1} 区详情`}>
+          {/* 右：区域详情 —— 点选区域后在右侧展开成一列（未点选时整个 DOM 都不渲染） */}
+          {showRegion && (
+              <aside className="ms-rdetail" aria-label={`第 ${selRegion + 1} 区详情`}>
                 <div className="ms-rd-head">
                   <span className="ms-rd-idx">第 {selRegion + 1} 区</span>
                   <div className="ms-rd-nav">
@@ -529,22 +543,25 @@ function MapEditorModal({
                     </>
                   )}
                 </div>
-              </section>
-            )}
-          </div>
+            </aside>
+          )}
         </div>
 
         <div className="ms-modal-foot">
-          <button className="mini-btn" onClick={() => onClose()}>取消</button>
-          <button className="btn-add" style={{ background: 'var(--accent)' }} onClick={save} disabled={saving || createEntity.isPending || updateEntity.isPending}>
+          {errMsg && (
+            <div className="form-err" role="alert">
+              {errMsg}
+            </div>
+          )}
+          <button className="ghost" onClick={() => onClose()}>取消</button>
+          <button
+            className="primary"
+            onClick={save}
+            disabled={saving || createEntity.isPending || updateEntity.isPending}
+          >
             {saving ? '保存中…' : '保存并返回'}
           </button>
         </div>
-        {errMsg && (
-          <div className="form-err" role="alert">
-            {errMsg}
-          </div>
-        )}
       </div>
       {delOpen && existing && (
         <Confirm

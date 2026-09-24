@@ -561,8 +561,35 @@ textarea {
 }
 .modal-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 4px;
+}
+/* 动作行内按钮统一高度 / 圆角与基线：
+   .primary 基类自带 margin-top:16px，会让它与「取消」一高一低（视觉歪斜），此处归零 */
+.modal-actions .ghost,
+.modal-actions .mini-btn,
+.modal-actions .primary {
+  margin-top: 0;
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.modal-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 危险动作（删除）：用印章红，别跟主题强调色混用 */
+.primary.danger {
+  background: var(--seal);
+  color: #fff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--seal) 32%, transparent);
+}
+.primary.danger:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--seal) 40%, transparent);
 }
 
 /* 角色归属徽标（铁律：万界=金，本作原生=印章红） */
@@ -4028,11 +4055,15 @@ select option {
 .ms-modal-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 18px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
   padding: 16px 22px;
   min-height: 0;
   overflow: hidden;
+}
+/* 点选区域后：右侧让出一列放区域详情（详情不盖住地图，地图自然收窄） */
+.ms-modal-body.has-region {
+  grid-template-columns: 300px minmax(0, 1fr) 296px;
 }
 .ms-modal-body .ms-panel {
   overflow-y: auto;
@@ -4049,10 +4080,53 @@ select option {
 }
 .ms-modal-foot {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   padding: 14px 22px 18px;
   border-top: 1px solid rgba(38, 32, 64, 0.08);
+}
+.ms-modal-foot .form-err {
+  margin: 0 auto 0 0;
+  max-width: 58%;
+}
+/* 底部动作：统一高度、胶囊圆角（原来用 .btn-add 的 100% 虚线块，撑成一条粉带，很难看） */
+.ms-modal-foot .ghost,
+.ms-modal-foot .primary {
+  margin-top: 0;
+  border-radius: 999px;
+  padding: 10px 26px;
+  font-family: inherit;
+  font-size: 13.5px;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  transition: transform 0.15s ease, filter 0.2s ease, border-color 0.2s ease;
+}
+.ms-modal-foot .ghost {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ms-modal-foot .ghost:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  color: var(--accent);
+}
+.ms-modal-foot .primary:not(:disabled):hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.ms-modal-foot .ghost:active,
+.ms-modal-foot .primary:not(:disabled):active {
+  transform: scale(0.97);
+}
+.ms-modal-foot .primary:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+.ms-modal-foot button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* 看板空状态 */
@@ -4100,17 +4174,37 @@ select option {
   }
 }
 
+/* 中等宽度：三列都收窄、内边距收紧，尽量把宽度留给地图 */
+@media (max-width: 1280px) {
+  .ms-modal-body {
+    grid-template-columns: 236px minmax(0, 1fr);
+    padding: 14px 16px;
+  }
+  .ms-modal-body.has-region {
+    grid-template-columns: 236px minmax(0, 1fr) 248px;
+  }
+  .ms-rdetail {
+    padding: 12px 12px 14px;
+  }
+}
+
 @media (max-width: 900px) {
   .ms-modal {
     width: 94vw;
     height: 92vh;
   }
-  .ms-modal-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) 300px;
+  .ms-modal-body,
+  .ms-modal-body.has-region {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: auto;
     overflow-y: auto;
   }
+  .ms-modal-body .ms-panel {
+    overflow: visible;
+  }
   .ms-preview {
+    height: 320px;
     min-height: 280px;
   }
 }
@@ -4422,7 +4516,7 @@ select option {
   color: #fff;
 }
 
-/* —— 地势输入框（编辑器「区域详情」浮层内使用） —— */
+/* —— 地势输入框（编辑器右侧「区域详情」列内使用） —— */
 .ms-desc-in {
   width: 100%;
   box-sizing: border-box;
@@ -4444,7 +4538,7 @@ select option {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .ms-desc-in::placeholder {
-  color: var(--faint);
+  color: var(--muted);
 }
 
 /* —— 看板：点选区域后显示该区地势 —— */
@@ -4467,9 +4561,10 @@ select option {
   text-align: center;
 }
 
-/* ===== v23 地图编辑器：区域详情改为「点选才出现」的右侧浮层（2026-09-24） =====
-   原先 12 个区域的「名称 + 地势」输入全堆在左栏，既挤又把全局参数埋了；
-   现在左栏只留全局设置，区域详情（名称 / 地势 / 势力）点击地图区域后从右侧浮出。 */
+/* ===== v24 地图编辑器：右侧独立「区域详情」列 + 底部动作条（2026-09-24） =====
+   原先 12 个区域的「名称 + 地势」输入全堆在左栏，既挤又把全局参数埋了。
+   现结构为三栏：左＝全局设置 / 中＝地图预览 / 右＝区域详情（点选区域才展开）
+   区域详情是真实布局列而非浮层——不遮地图，地图随收窄；未点选时整列不渲染。 */
 
 /* 左栏引导语 */
 .ms-hint {
@@ -4486,29 +4581,19 @@ select option {
   font-weight: 600;
 }
 
-/* 浮层定位上下文（原为 static，无法承载绝对定位的详情面板） */
-.ms-modal-body .ms-stage {
-  position: relative;
-}
-
-/* —— 区域详情浮层：未点选时 DOM 都不渲染，点选后自右滑入 —— */
+/* —— 区域详情列：未点选时 DOM 都不渲染；点选后在弹窗右侧展开成一列，
+      地图随之收窄（不再压在地图上），弹窗结构变为「左设置 / 中地图 / 右区域」—— */
 .ms-rdetail {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  z-index: 3;
-  width: 320px;
-  max-width: calc(100% - 24px);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 14px 12px;
+  min-height: 0;
   overflow-y: auto;
+  padding: 14px 14px 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 18px 44px rgba(70, 55, 130, 0.16);
+  box-shadow: 0 14px 36px rgba(70, 55, 130, 0.1);
   backdrop-filter: blur(14px);
   animation: msrd-in 0.24s cubic-bezier(0.22, 0.8, 0.3, 1) both;
 }
@@ -4649,15 +4734,9 @@ select option {
   color: var(--muted);
 }
 
-/* 窄屏（弹窗改上下布局）：详情面板改为自底部铺开 */
+/* 窄屏（弹窗改为上下堆叠）：区域详情列排在地图下方 */
 @media (max-width: 900px) {
   .ms-rdetail {
-    top: auto;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    width: auto;
-    max-width: none;
-    max-height: 68%;
+    max-height: 40vh;
   }
 }
