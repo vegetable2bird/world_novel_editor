@@ -15,6 +15,10 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // onClose 用 ref 持有：父组件每次渲染都会传入新的内联箭头函数，
+  // 若放进 effect 依赖会导致 effect 反复触发、把焦点拽回首个输入框（表现为「输入即失焦」）
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const node = ref.current;
@@ -30,7 +34,7 @@ export function Modal({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === 'Tab' && node) {
@@ -53,7 +57,7 @@ export function Modal({
       document.removeEventListener('keydown', onKey, true);
       prev?.focus?.();
     };
-  }, [onClose]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

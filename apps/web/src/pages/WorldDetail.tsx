@@ -173,12 +173,17 @@ export function WorldDetail() {
   async function saveFaction() {
     const nm = facForm.name.trim();
     if (!nm) return;
+    // 保留已有字段：势力在地图上的落点信息（mapId/regionIdx）与旧坐标 x/y，
+    // 否则在地图上点击图钉编辑势力再保存会把落点抹掉、图钉消失
+    const existing = facModal?.id ? entities?.find((v) => v.id === facModal.id) : null;
+    const prev = existing ? parse<Record<string, unknown>>(existing.fields, {}) : {};
     const fields = j({
+      ...prev,
       kind: facForm.kind,
       desc: facForm.desc,
       color: facForm.color,
-      x: facModal?.x ?? 0,
-      y: facModal?.y ?? 0,
+      // 仅当本次从地图点击传入坐标时才覆盖；其余情况沿用已有坐标（prev 已含）
+      ...(facModal?.x !== undefined ? { x: facModal.x, y: facModal.y } : {}),
     });
     if (facModal?.id) await updateEntity.mutateAsync({ id: facModal.id, name: nm, fields });
     else await createEntity.mutateAsync({ type: 'faction', name: nm, fields });
