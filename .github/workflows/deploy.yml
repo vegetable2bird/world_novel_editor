@@ -82,9 +82,12 @@ jobs:
           echo "bundle size:" && ls -lh deploy-bundle.tgz
 
       # 传到普通用户可写的家目录（/opt 与 /etc 普通用户写不了）
+      # timeout-minutes: 单文件包仍有数十 MB，GitHub runner（境外）→ 北京轻量的跨境
+      # 出口速度波动大，实测该步 3–15 分钟不等。曾设 12 分钟，结果误杀了
+      # 一次「慢但正常」的上传（758s 被杀）；放宽到 25 分钟，只兜底真正的死挂。
       - name: Upload bundle to server (staging in home)
         uses: appleboy/scp-action@v0.1.7
-        timeout-minutes: 12
+        timeout-minutes: 25
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
