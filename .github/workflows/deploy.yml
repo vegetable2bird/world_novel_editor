@@ -84,6 +84,7 @@ jobs:
       # 传到普通用户可写的家目录（/opt 与 /etc 普通用户写不了）
       - name: Upload bundle to server (staging in home)
         uses: appleboy/scp-action@v0.1.7
+        timeout-minutes: 12
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
