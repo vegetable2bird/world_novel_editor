@@ -17,7 +17,9 @@ interface MapV2 {
   parentRegion: string | null;
   params: GenParams;
   regionNames: string[];
-  /** 详细地势描述（水网 / 山脉 / 植被等文字设定） */
+  /** 每个分块区域的地势描写（水网 / 山脉 / 植被…），与 regionNames 同序 */
+  regionDescs?: string[];
+  /** @deprecated 旧版「整体地势」描述；新数据改用 regionDescs（按区域） */
   desc?: string;
 }
 
@@ -46,18 +48,27 @@ function parseFacFields(f: WorldEntity): FacFields {
 }
 
 /* ---------- 图表 option 构造（展示与弹窗预览共用） ---------- */
+const escHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 function buildOption(
   params: GenParams,
   regionNames: string[],
   pins: { id: string; name: string; color?: string; coord: [number, number] }[],
+  regionDescs?: string[],
+  selectedIdx?: number | null,
 ) {
   const gen = generate(params);
   if (!gen.geo.features.length) return null;
   const mapName = 'wxmap_' + params.seed;
   echarts.registerMap(mapName, gen.geo as never);
-  const nameOf = (feat: string | undefined) => {
+  const idxOf = (feat: string | undefined) => {
     const i = feat && feat.length > 1 ? Number(feat.slice(1)) : NaN;
-    return Number.isFinite(i) ? (regionNames[i] ?? '') : '';
+    return Number.isFinite(i) ? i : null;
+  };
+  const nameOf = (feat: string | undefined) => {
+    const i = idxOf(feat);
+    return i === null ? '' : (regionNames[i] ?? '');
   };
   return {
     gen,
@@ -74,6 +85,16 @@ function buildOption(
           shadowBlur: 10,
           shadowColor: 'rgba(70,55,130,0.10)',
         },
+        // 选中区域高亮（未选中的区域沿用上面的默认样式）
+        regions:
+          selectedIdx !== null && selectedIdx !== undefined && selectedIdx >= 0
+            ? [
+                {
+                  name: 'r' + selectedIdx,
+                  itemStyle: { areaColor: '#f6e3a3', borderColor: '#e3c874', borderWidth: 2 },
+                },
+              ]
+            : [],
         label: {
           show: true,
           formatter: (p: { name?: string }) => nameOf(p.name),
@@ -86,7 +107,16 @@ function buildOption(
           label: { color: '#262040', fontWeight: 600 },
           itemStyle: { areaColor: '#f6e3a3' },
         },
-        tooltip: { show: true, formatter: (p: { name?: string }) => nameOf(p.name) },
+        tooltip: {
+          show: true,
+          formatter: (p: { name?: string }) => {
+            const i = idxOf(p.name);
+            if (i === null || !regionNames[i]) return '';
+            const d = (regionDescs?.[i] ?? '').trim();
+            const nm = escHtml(regionNames[i]);
+            return d ? `${nm}<br/><span style="opacity:.7">${escHtml(d)}</span>` : nm;
+          },
+        },
         silent: false,
       },
       series: [
@@ -130,6 +160,13 @@ function resolveNames(genRegions: number, saved: string[]) {
   const names = saved.slice(0, genRegions);
   while (names.length < genRegions) names.push('');
   return names.map((x, i) => x || defaultRegionNames(genRegions)[i]);
+}
+
+/* ---------- 区域地势描写（定长补齐，与 regionNames 同序） ---------- */
+function resolveDescs(genRegions: number, saved?: string[]) {
+  const descs = (saved ?? []).slice(0, genRegions);
+  while (descs.length < genRegions) descs.push('');
+  return descs;
 }
 
 /* ---------- 85% 全屏编辑弹窗 ---------- */
@@ -186,6 +223,10 @@ function MapEditorModal({
     () => resolveNames(previewGen.regions.length, draft.regionNames),
     [previewGen, draft.regionNames],
   );
+  const regionDescs = useMemo(
+    () => resolveDescs(previewGen.regions.length, draft.regionDescs),
+    [previewGen, draft.regionDescs],
+  );
   // 预览里展示“保存后”的落点：新图还没 id，只看已有图上的
   const previewPins = useMemo(() => {
     if (!existing) return [] as { id: string; name: string; color?: string; coord: [number, number] }[];
@@ -217,24 +258,41 @@ function MapEditorModal({
   useEffect(() => {
     const c = chart.current;
     if (!c) return;
-    const built = buildOption(draft.params, regionNames, previewPins);
+    const built = buildOption(draft.params, regionNames, previewPins, regionDescs, null);
     if (!built) {
       c.clear();
       return;
     }
     c.setOption(built.option, true);
-  }, [draft.params, regionNames, previewPins]);
+  }, [draft.params, regionNames, regionDescs, previewPins]);
 
   const patchParams = (k: keyof GenParams, v: number) =>
     setDraft((d) => ({ ...d, params: { ...d.params, [k]: v } }));
 
+  // 区域命名 / 地势：改写某一块时，先把数组补齐到与生成区域等长，保证下标对齐
+  const setRegionName = (i: number, v: string) =>
+    setDraft((d) => {
+      const rn = resolveNames(previewGen.regions.length, d.regionNames);
+      rn[i] = v;
+      return { ...d, regionNames: rn };
+    });
+  const setRegionDesc = (i: number, v: string) =>
+    setDraft((d) => {
+      const rd = resolveDescs(previewGen.regions.length, d.regionDescs);
+      rd[i] = v;
+      return { ...d, regionDescs: rd };
+    });
+
   const save = async () => {
     setSaving(true);
-    const payload = {
+    const payload: MapV2 = {
       ...draft,
       params: { ...draft.params, regions: previewGen.regions.length },
       regionNames,
+      regionDescs,
     };
+    // 已有按区域的地势描写时，旧的「整体地势」字段即被取代，一并丢弃
+    if (regionDescs.some((x) => x.trim())) delete payload.desc;
     try {
       if (existing) {
         await updateEntity.mutateAsync({ id: existing.entity.id, name: draft.name, fields: JSON.stringify(payload) });
@@ -336,37 +394,30 @@ function MapEditorModal({
             </div>
 
             <div className="ms-sec">
-              <div className="ms-label">区域命名</div>
+              <div className="ms-label">区域设定 · 名称与地势</div>
               <div className="ms-scroll">
                 {previewGen.regions.map((_, i) => (
-                  <div key={i} className="ms-slider">
-                    <span className="ms-sl">第{i + 1}区</span>
-                    <input
-                      className="ms-name"
-                      style={{ flex: 1 }}
-                      value={regionNames[i]}
-                      onChange={(e) =>
-                        setDraft((d) => {
-                          const rn = regionNames.slice();
-                          rn[i] = e.target.value;
-                          return { ...d, regionNames: rn };
-                        })
-                      }
+                  <div key={i} className="ms-region">
+                    <div className="ms-slider">
+                      <span className="ms-sl">第{i + 1}区</span>
+                      <input
+                        className="ms-name"
+                        style={{ flex: 1 }}
+                        placeholder="区域名"
+                        value={regionNames[i]}
+                        onChange={(e) => setRegionName(i, e.target.value)}
+                      />
+                    </div>
+                    <textarea
+                      className="ms-desc-in"
+                      rows={2}
+                      placeholder="本区地势：水网 / 山脉 / 植被…"
+                      value={regionDescs[i] ?? ''}
+                      onChange={(e) => setRegionDesc(i, e.target.value)}
                     />
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="ms-sec">
-              <div className="ms-label">地势描述</div>
-              <textarea
-                className="ms-desc"
-                rows={3}
-                placeholder="水网 / 山脉 / 植被等文字设定…"
-                value={draft.desc ?? ''}
-                onChange={(e) => setDraft((d) => ({ ...d, desc: e.target.value }))}
-              />
             </div>
 
             <div className="ms-sec">
@@ -474,6 +525,7 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
 
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [selRegion, setSelRegion] = useState<number | null>(null);
   const [modal, setModal] = useState<{ mapId: string | null; parentId?: string | null } | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const chart = useRef<ReturnType<typeof echarts.init> | null>(null);
@@ -511,6 +563,10 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
     () => (boardGen && current ? resolveNames(boardGen.regions.length, current.data.regionNames) : []),
     [boardGen, current],
   );
+  const boardDescs = useMemo(
+    () => (boardGen && current ? resolveDescs(boardGen.regions.length, current.data.regionDescs) : []),
+    [boardGen, current],
+  );
   const boardPins = useMemo(() => {
     if (!current || !boardGen) return [] as { id: string; name: string; color?: string; coord: [number, number] }[];
     return factions
@@ -524,6 +580,11 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
       .filter((x): x is NonNullable<typeof x> => x !== null);
   }, [factions, current, boardGen]);
 
+  // 切图时清空区域选中
+  useEffect(() => {
+    setSelRegion(null);
+  }, [currentId]);
+
   // 展示渲染
   useEffect(() => {
     const c = chart.current;
@@ -532,18 +593,23 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
       c.clear();
       return;
     }
-    const built = buildOption(current.data.params, boardNames, boardPins);
+    const built = buildOption(current.data.params, boardNames, boardPins, boardDescs, selRegion);
     if (!built) {
       c.clear();
       return;
     }
     c.setOption(built.option, true);
-  }, [current, boardGen, boardNames, boardPins]);
+  }, [current, boardGen, boardNames, boardDescs, boardPins, selRegion]);
 
-  // 图钉点击 → 打开势力
-  clickRef.current = (p: { componentType?: string; seriesType?: string; data?: { facId?: string } }) => {
+  // 图钉点击 → 打开势力；区域点击 → 选中查看该区地势
+  clickRef.current = (p: { componentType?: string; seriesType?: string; name?: string; data?: { facId?: string } }) => {
     if (p.componentType === 'series' && p.seriesType === 'scatter' && p.data?.facId) {
       onOpenFac?.(p.data.facId);
+      return;
+    }
+    if (p.componentType === 'geo' && typeof p.name === 'string') {
+      const i = Number(p.name.slice(1));
+      if (Number.isFinite(i)) setSelRegion((v) => (v === i ? null : i));
     }
   };
 
@@ -579,13 +645,27 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
 
         {maps.length > 0 && (
           <div className="ms-toolbar">
-            <button className="ms-tbtn ms-tedit" onClick={() => current && setModal({ mapId: current.entity.id })}>
+            <button
+              className="ms-tbtn"
+              onClick={() => current && setModal({ mapId: current.entity.id })}
+              title="编辑当前地图"
+            >
               编辑地图
             </button>
-            <button className="ms-tbtn" title="生成新地图" onClick={() => setModal({ mapId: null })}>
-              ＋
+            <button
+              className="ms-tbtn"
+              onClick={() => setModal({ mapId: null })}
+              title="生成新地图"
+              aria-label="生成新地图"
+            >
+              ＋ 新建
             </button>
-            <button className={'ms-tbtn' + (layersOpen ? ' active' : '')} onClick={() => setLayersOpen((v) => !v)}>
+            <button
+              className={'ms-tbtn' + (layersOpen ? ' active' : '')}
+              onClick={() => setLayersOpen((v) => !v)}
+              aria-expanded={layersOpen}
+              title="图层"
+            >
               图层
             </button>
           </div>
@@ -617,9 +697,20 @@ export function MapStudio({ worldId, factions, onOpenFac }: { worldId: string; f
           </div>
         )}
 
-        {current?.data.desc && (
+        {/* 区域地势：点选某一块区域，读该区的地势描写 */}
+        {selRegion !== null && boardNames[selRegion] ? (
+          <div className="ms-desc-card">
+            <div className="ms-desc-t">{boardNames[selRegion]}</div>
+            <div className="ms-desc-b">
+              {boardDescs[selRegion]?.trim() || '这一区还没有地势描写。'}
+            </div>
+          </div>
+        ) : boardDescs.some((d) => d.trim()) ? (
+          <div className="ms-desc-hint">点击地图上的区域，查看该区地势</div>
+        ) : current?.data.desc ? (
+          // 旧数据回退：早期版本存的是「整体地势」单条描述
           <div className="ms-desc-card">{current.data.desc}</div>
-        )}
+        ) : null}
       </div>
 
       {modal && (
