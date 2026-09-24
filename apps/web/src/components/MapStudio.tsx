@@ -203,7 +203,8 @@ function MapEditorModal({
           regionNames: [],
         },
   );
-  const [pinning, setPinning] = useState<string | null>(null);
+  /** 预览里点选的区域下标；null = 未点选（右侧详情面板不渲染） */
+  const [selRegion, setSelRegion] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [delOpen, setDelOpen] = useState(false);
@@ -254,17 +255,22 @@ function MapEditorModal({
     };
   }, []);
 
-  // 预览渲染
+  // 预览渲染（含点选区域高亮）
   useEffect(() => {
     const c = chart.current;
     if (!c) return;
-    const built = buildOption(draft.params, regionNames, previewPins, regionDescs, null);
+    const built = buildOption(draft.params, regionNames, previewPins, regionDescs, selRegion);
     if (!built) {
       c.clear();
       return;
     }
     c.setOption(built.option, true);
-  }, [draft.params, regionNames, regionDescs, previewPins]);
+  }, [draft.params, regionNames, regionDescs, previewPins, selRegion]);
+
+  // 区域数变少后，已点选的下标可能越界 —— 收起详情面板
+  useEffect(() => {
+    setSelRegion((v) => (v !== null && v >= previewGen.regions.length ? null : v));
+  }, [previewGen]);
 
   const patchParams = (k: keyof GenParams, v: number) =>
     setDraft((d) => ({ ...d, params: { ...d.params, [k]: v } }));
@@ -314,29 +320,50 @@ function MapEditorModal({
     onClose();
   };
 
-  // 落点点击（弹窗预览内）：一个势力只保留一个落点，跨图移动
+  // 点击预览里的区域 → 右侧详情面板开 / 合（再点同一区即收起）
   clickRef.current = (p: unknown) => {
-    const evt = p as { componentType?: string; seriesType?: string; name?: string; data?: { facId?: string } };
-    if (evt.componentType === 'series' && evt.seriesType === 'scatter') return;
-    if (!pinning || !existing || evt.componentType !== 'geo' || !evt.name) return;
-    const idx = Number(evt.name.slice(1));
-    if (!Number.isFinite(idx)) return;
-    const f = factions.find((x) => x.id === pinning);
+    const evt = p as { componentType?: string; seriesType?: string; name?: string };
+    if (evt.componentType === 'series') return; // 图钉不参与区域点选
+    if (evt.componentType === 'geo' && typeof evt.name === 'string') {
+      const i = Number(evt.name.slice(1));
+      if (Number.isFinite(i)) setSelRegion((v) => (v === i ? null : i));
+    }
+  };
+
+  // 势力落点：一个势力只保留一个落点；regionIdx 传 null 表示移出
+  const setFacRegion = (facId: string, regionIdx: number | null) => {
+    if (!existing) return;
+    const f = factions.find((x) => x.id === facId);
     if (!f) return;
-    const merged = { ...parseFacFields(f), mapId: existing.entity.id, regionIdx: idx };
+    const merged: FacFields = { ...parseFacFields(f) };
+    if (regionIdx === null) {
+      delete merged.mapId;
+      delete merged.regionIdx;
+    } else {
+      merged.mapId = existing.entity.id;
+      merged.regionIdx = regionIdx;
+    }
     void updateEntity
-      .mutateAsync({ id: f.id, fields: JSON.stringify(merged) })
-      .then(() => setPinning(null))
+      .mutateAsync({ id: facId, fields: JSON.stringify(merged) })
       .catch((err) => setErrMsg('落点失败：' + (err instanceof Error ? err.message : String(err))));
   };
 
-  const clearPin = async (facId: string) => {
-    const f = factions.find((x) => x.id === facId);
-    if (!f) return;
-    const merged = parseFacFields(f);
-    delete merged.mapId;
-    delete merged.regionIdx;
-    await updateEntity.mutateAsync({ id: facId, fields: JSON.stringify(merged) });
+  // 详情面板用：此区已落点的势力 / 其余势力
+  const facsHere = selRegion === null || !existing
+    ? []
+    : factions.filter((f) => {
+        const ff = parseFacFields(f);
+        return ff.mapId === existing.entity.id && ff.regionIdx === selRegion;
+      });
+  const facsElse = selRegion === null || !existing ? [] : factions.filter((f) => !facsHere.includes(f));
+
+  // 上一区 / 下一区（键盘与鼠标都能用，省得在地图上来回找）
+  const gotoRegion = (delta: number) => {
+    setSelRegion((v) => {
+      if (v === null) return v;
+      const n = previewGen.regions.length;
+      return (v + delta + n) % n;
+    });
   };
 
   const parentMap = maps.find((m) => m.entity.id === draft.parentId) ?? null;
@@ -393,67 +420,9 @@ function MapEditorModal({
               </div>
             </div>
 
-            <div className="ms-sec">
-              <div className="ms-label">区域设定 · 名称与地势</div>
-              <div className="ms-scroll">
-                {previewGen.regions.map((_, i) => (
-                  <div key={i} className="ms-region">
-                    <div className="ms-slider">
-                      <span className="ms-sl">第{i + 1}区</span>
-                      <input
-                        className="ms-name"
-                        style={{ flex: 1 }}
-                        placeholder="区域名"
-                        value={regionNames[i]}
-                        onChange={(e) => setRegionName(i, e.target.value)}
-                      />
-                    </div>
-                    <textarea
-                      className="ms-desc-in"
-                      rows={2}
-                      placeholder="本区地势：水网 / 山脉 / 植被…"
-                      value={regionDescs[i] ?? ''}
-                      onChange={(e) => setRegionDesc(i, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="ms-sec">
-              <div className="ms-label">势力落点（一势力一点）</div>
-              {!existing && <div className="ms-kids">保存本地图后，才能把势力放到区域上。</div>}
-              {existing && factions.length === 0 && <div className="ms-kids">暂无势力——先在「势力组织」里创建。</div>}
-              {existing &&
-                factions.map((f) => {
-                  const ff = parseFacFields(f);
-                  const idx = ff.regionIdx;
-                  const onThis = ff.mapId === existing.entity.id && idx !== undefined && idx >= 0 && idx < previewGen.regions.length;
-                  const otherMap = ff.mapId && ff.mapId !== existing.entity.id ? maps.find((m) => m.entity.id === ff.mapId) : null;
-                  return (
-                    <div key={f.id} className="ms-slider">
-                      <i className="ms-dot" style={{ background: ff.color || 'var(--accent)' }} />
-                      <span className="ms-facnm" title={f.name}>{f.name}</span>
-                      {onThis ? (
-                        <>
-                          <span className="ms-pinat">{regionNames[idx]}</span>
-                          <button className="mini-btn" onClick={() => clearPin(f.id)}>清除</button>
-                        </>
-                      ) : (
-                        <button
-                          className={'mini-btn' + (pinning === f.id ? ' on' : '')}
-                          style={{ marginLeft: 'auto' }}
-                          onClick={() => setPinning((v) => (v === f.id ? null : f.id))}
-                        >
-                          {otherMap ? `移动自「${otherMap.data.name}」` : pinning === f.id ? '取消' : '落点'}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              {pinning && existing && (
-                <div className="ms-kids">点击右侧预览里的区域，放置「{factions.find((x) => x.id === pinning)?.name}」…</div>
-              )}
+            <div className="ms-hint">
+              点击右侧地图上的任一区域，详情会在右侧浮出 —— 在那里编辑该区
+              <b>名称</b>、<b>地势</b>与<b>势力落点</b>；未点选时不占地方。
             </div>
 
             {parentMap && (
@@ -475,9 +444,93 @@ function MapEditorModal({
             )}
           </div>
 
-          {/* 右：实时预览 */}
+          {/* 右：实时预览 + 按需浮出的区域详情 */}
           <div className="ms-stage">
             <div ref={chartRef} className="ms-chart ms-preview" />
+
+            {selRegion !== null && (
+              <section className="ms-rdetail" aria-label={`第 ${selRegion + 1} 区详情`}>
+                <div className="ms-rd-head">
+                  <span className="ms-rd-idx">第 {selRegion + 1} 区</span>
+                  <div className="ms-rd-nav">
+                    <button className="ms-rd-navb" onClick={() => gotoRegion(-1)} title="上一区" aria-label="上一区">‹</button>
+                    <button className="ms-rd-navb" onClick={() => gotoRegion(1)} title="下一区" aria-label="下一区">›</button>
+                    <button className="ms-rd-navb" onClick={() => setSelRegion(null)} title="收起详情" aria-label="收起区域详情">✕</button>
+                  </div>
+                </div>
+
+                <div className="ms-rd-f">
+                  <label className="ms-rd-lab" htmlFor="ms-rd-name">区域名</label>
+                  <input
+                    id="ms-rd-name"
+                    className="ms-name"
+                    placeholder="区域名"
+                    value={regionNames[selRegion] ?? ''}
+                    onChange={(e) => setRegionName(selRegion, e.target.value)}
+                  />
+                </div>
+
+                <div className="ms-rd-f">
+                  <label className="ms-rd-lab" htmlFor="ms-rd-desc">本区地势</label>
+                  <textarea
+                    id="ms-rd-desc"
+                    className="ms-desc-in"
+                    rows={4}
+                    placeholder="水网 / 山脉 / 植被…"
+                    value={regionDescs[selRegion] ?? ''}
+                    onChange={(e) => setRegionDesc(selRegion, e.target.value)}
+                  />
+                </div>
+
+                <div className="ms-rd-f">
+                  <div className="ms-rd-lab">势力</div>
+                  {!existing ? (
+                    <div className="ms-rd-empty">保存本地图后，才能把势力放到区域上。</div>
+                  ) : factions.length === 0 ? (
+                    <div className="ms-rd-empty">还没有势力 —— 先在「势力组织」里创建。</div>
+                  ) : (
+                    <>
+                      {facsHere.length === 0 && <div className="ms-rd-empty">本区尚无势力。</div>}
+                      {facsHere.map((f) => {
+                        const ff = parseFacFields(f);
+                        return (
+                          <div key={f.id} className="ms-fac-row">
+                            <i className="ms-dot" style={{ background: ff.color || 'var(--accent)' }} />
+                            <span className="ms-facnm" title={f.name}>{f.name}</span>
+                            <button className="mini-btn" onClick={() => setFacRegion(f.id, null)}>移出</button>
+                          </div>
+                        );
+                      })}
+                      {facsElse.length > 0 && (
+                        <details className="ms-rd-add">
+                          <summary>＋ 把势力放到此区</summary>
+                          {facsElse.map((f) => {
+                            const ff = parseFacFields(f);
+                            const fromOtherMap =
+                              ff.mapId && ff.mapId !== existing.entity.id
+                                ? maps.find((m) => m.entity.id === ff.mapId)
+                                : null;
+                            return (
+                              <button key={f.id} className="ms-fac-add" onClick={() => setFacRegion(f.id, selRegion)}>
+                                <i className="ms-dot" style={{ background: ff.color || 'var(--accent)' }} />
+                                {f.name}
+                                <span className="ms-fac-add-s">
+                                  {fromOtherMap
+                                    ? `从「${fromOtherMap.data.name}」移来`
+                                    : ff.regionIdx !== undefined
+                                      ? '从其他区域移来'
+                                      : '未落点'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </details>
+                      )}
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
         </div>
 
