@@ -2,11 +2,22 @@ name: Deploy to Tencent Cloud Lighthouse
 
 # 触发：推送 main 或手动 workflow_dispatch。
 # 策略：GitHub Actions(Linux, 有外网) 完成依赖安装与构建，
-#       把「运行时产物包」SCP 到服务器【用户家目录】(普通用户可写)，
+#       把「运行时产物」SCP 到服务器【用户家目录】(普通用户可写)，
 #       再 SSH 用 sudo 切库 + 写 systemd 单元 + 重启。
 #       服务器本身不需要 npm install / 构建（绕开禁外网限制）。
 #       数据库用 SQLite（零成本）：DB 文件落 /var/lib/wanxiang-v2/wanxiang.db，
 #       位于应用目录之外，避免每次部署被覆盖。
+#
+# ── v25 部署优化：根治「跨境上传慢 / 超时被杀」 ──────────────────────────────
+#   痛点：单包内含 node_modules，境外 runner → 北京轻量跨境 SCP 实测 10–26 分钟；
+#        25 分钟阈值已实际误杀过一次部署（run 35970365866，Upload 步骤超时，
+#        cutover 被 skip，线上停在旧构建）。
+#   方案：拆成两个包 ——
+#     · 代码包 deploy-code.tgz      小（dist + prisma + db-seed，~几百 KB），每次必传；
+#     · 依赖包 deploy-deps-<hash>.tgz 大（node_modules），按 package-lock.json 哈希命名；
+#       上传前先 ssh 探测服务器是否已有同名文件，命中则完全跳过上传。
+#   效果：日常部署（依赖没变）只传几百 KB，上传 <1 分钟；仅当 lockfile 变化才重传大包。
+#   上传改走原生 ssh/scp（以便实现「命中即跳过」的逻辑），cutover 仍用 ssh-action。
 #
 # 服务器登录用户为普通用户（腾讯云 Ubuntu 镜像默认 `ubuntu`），
 # 因此：scp 目标必须是家目录；所有特权操作走 sudo（需 NOPASSWD）。
@@ -65,36 +76,60 @@ jobs:
       - name: Prune dev dependencies (runtime only)
         run: npm prune --omit=dev
 
-      # 打成单个 tar.gz 再传。
-      # 原因：node_modules 有 2 万+ 个小文件，scp 逐文件传输时每个文件都有
-      # 一次协议往返，实测该步耗时 26 分钟（1587s），而实际数据量仅 ~250MB，
-      # 瓶颈是文件数量而非带宽。打成单文件后传输降到 1-2 分钟。
-      # tar 默认保留符号链接，也避免了此前 `cp -L` 解引用导致 .bin 膨胀/错位的问题。
-      - name: Assemble deploy bundle (tar.gz)
+      # lockfile 哈希 = 依赖包版本号。依赖不变则哈希不变 → 复用服务器已有依赖包。
+      - name: Compute lockfile hash
+        id: lock
+        run: echo "hash=$(sha256sum package-lock.json | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      # 代码包：小，每次部署都传。
+      - name: Assemble code bundle (small — every deploy)
         run: |
-          rm -f deploy-bundle.tgz
-          tar -czf deploy-bundle.tgz \
+          rm -f deploy-code.tgz
+          tar -czf deploy-code.tgz \
             apps/server/dist \
             apps/web/dist \
             prisma \
             db-seed \
-            node_modules
-          echo "bundle size:" && ls -lh deploy-bundle.tgz
+            package.json
+          echo "code bundle:" && ls -lh deploy-code.tgz
 
-      # 传到普通用户可写的家目录（/opt 与 /etc 普通用户写不了）
-      # timeout-minutes: 单文件包仍有数十 MB，GitHub runner（境外）→ 北京轻量的跨境
-      # 出口速度波动大，实测该步 3–15 分钟不等。曾设 12 分钟，结果误杀了
-      # 一次「慢但正常」的上传（758s 被杀）；放宽到 25 分钟，只兜底真正的死挂。
-      - name: Upload bundle to server (staging in home)
-        uses: appleboy/scp-action@v0.1.7
-        timeout-minutes: 25
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: "deploy-bundle.tgz"
-          target: "/home/ubuntu"
+      # 依赖包：大，按 lockfile 哈希命名；服务器已有则不传。
+      - name: Assemble deps bundle (large — hash cached)
+        run: |
+          rm -f deploy-deps-*.tgz
+          tar -czf "deploy-deps-${{ steps.lock.outputs.hash }}.tgz" node_modules
+          echo "deps bundle:" && ls -lh deploy-deps-*.tgz
+
+      # 原生 ssh/scp：代码包无条件上传；依赖包先探测、命中即跳过。
+      # timeout 只对「首次上传依赖包」有意义（实测 24–26 分钟）；之后该步秒级完成。
+      - name: Upload bundles (code always; deps only on cache miss)
+        timeout-minutes: 45
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
+          LOCKHASH: ${{ steps.lock.outputs.hash }}
+        run: |
+          set -euo pipefail
+          KEY="$HOME/.ssh/deploy_key"
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > "$KEY"
+          chmod 600 "$KEY"
+          OPTS="-i $KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=6"
+          DEST="$DEPLOY_USER@$DEPLOY_HOST"
+
+          echo "→ 上传代码包（小）…"
+          scp $OPTS -P "$DEPLOY_PORT" deploy-code.tgz "$DEST:/home/ubuntu/deploy-code.tgz"
+          echo "  代码包: $(du -h deploy-code.tgz | cut -f1)"
+
+          if ssh $OPTS -p "$DEPLOY_PORT" "$DEST" "test -f /home/ubuntu/deploy-deps-$LOCKHASH.tgz"; then
+            echo "→ 依赖缓存命中（$LOCKHASH），跳过依赖上传"
+          else
+            echo "→ 依赖缓存未命中，上传依赖包（$LOCKHASH）…"
+            scp $OPTS -P "$DEPLOY_PORT" "deploy-deps-$LOCKHASH.tgz" "$DEST:/home/ubuntu/deploy-deps-$LOCKHASH.tgz"
+            echo "  依赖包: $(du -h deploy-deps-$LOCKHASH.tgz | cut -f1)"
+          fi
 
       - name: Cutover, migrate & restart on server (sudo)
         uses: appleboy/ssh-action@v1.0.3
@@ -108,11 +143,19 @@ jobs:
             APP_DIR=/opt/wanxiang-v2
             DATA_DIR=/var/lib/wanxiang-v2
             STAGING_ROOT=/home/ubuntu/wanxiang-staging
+            LOCKHASH=${{ steps.lock.outputs.hash }}
 
-            # 解开单文件传输包（落在家目录，普通用户可写）
+            # 解开「代码包 + 依赖包」（都落在家目录，普通用户可写）
             rm -rf "$STAGING_ROOT"
             mkdir -p "$STAGING_ROOT"
-            tar -xzf /home/ubuntu/deploy-bundle.tgz -C "$STAGING_ROOT"
+            tar -xzf /home/ubuntu/deploy-code.tgz -C "$STAGING_ROOT"
+            if [ ! -f "/home/ubuntu/deploy-deps-$LOCKHASH.tgz" ]; then
+              echo "错误：依赖包 /home/ubuntu/deploy-deps-$LOCKHASH.tgz 不存在"; exit 1
+            fi
+            tar -xzf "/home/ubuntu/deploy-deps-$LOCKHASH.tgz" -C "$STAGING_ROOT"
+
+            # 清理旧依赖包（保留当前 + 最近 2 个，防磁盘堆积）
+            find /home/ubuntu -maxdepth 1 -name 'deploy-deps-*.tgz' ! -name "deploy-deps-$LOCKHASH.tgz" -printf '%T@ %p\n' 2>/dev/null | sort -rn | tail -n +3 | cut -d' ' -f2- | xargs -r rm -f
 
             # 定位产物包根目录
             MAIN_JS=$(find "$STAGING_ROOT" -maxdepth 6 -path '*apps/server/dist/main.js' | head -1)
